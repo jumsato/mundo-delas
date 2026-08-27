@@ -12,7 +12,7 @@
 //     https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/all/all.json
 import fs from 'node:fs'
 import path from 'node:path'
-import { geoContains } from 'd3-geo'
+import { geoContains, geoCentroid } from 'd3-geo'
 import simplify from '@turf/simplify'
 
 const SCRATCH = path.resolve('raw-data')
@@ -69,25 +69,37 @@ for (const f of places.features) {
 }
 
 function centroidOf(feature) {
-  // cheap average-of-ring-points centroid, good enough for nearest-state fallback
-  let sx = 0,
-    sy = 0,
-    n = 0
-  function walk(coords) {
-    if (typeof coords[0] === 'number') {
-      sx += coords[0]
-      sy += coords[1]
-      n++
-      return
+  // spherically-aware centroid: a naive average of ring points breaks for
+  // shapes crossing the antimeridian (e.g. Alaska, Russia), averaging +179
+  // and -179 down to ~0 instead of ~180.
+  return geoCentroid(feature)
+}
+
+// Remote open-ocean points, nowhere near any coastline: if a simplified polygon
+// claims to contain one of these, its ring topology got broken by simplification
+// (classic failure mode for shapes that cross the antimeridian, like Alaska or
+// Russia) and geoContains would then wrongly match huge parts of the globe.
+const OCEAN_SANITY_POINTS = [
+  [-150, 0],
+  [-30, 0],
+  [80, -40],
+  [-25, -50],
+  [160, -20],
+]
+
+function isTopologyBroken(feature) {
+  return OCEAN_SANITY_POINTS.some((p) => {
+    try {
+      return geoContains(feature, p)
+    } catch {
+      return true
     }
-    coords.forEach(walk)
-  }
-  walk(feature.geometry.coordinates)
-  return [sx / n, sy / n]
+  })
 }
 
 const geoIndex = { hasStates: [], hasCities: [] }
 let countriesProcessed = 0
+let brokenSimplifications = 0
 
 for (const [alpha3, rawFeatures] of statesByCountry) {
   const numericId = alpha3ToNumeric.get(alpha3)
@@ -100,7 +112,12 @@ for (const [alpha3, rawFeatures] of statesByCountry) {
         { type: 'Feature', properties: {}, geometry: geom },
         { tolerance: 0.01, highQuality: false },
       )
-      geom = simplified.geometry
+      if (isTopologyBroken(simplified)) {
+        brokenSimplifications++
+        geom = f.geometry
+      } else {
+        geom = simplified.geometry
+      }
     } catch {
       // keep original geometry if simplify fails on a degenerate shape
     }
@@ -186,4 +203,5 @@ fs.writeFileSync(path.resolve('src/data/geo-index.json'), JSON.stringify(geoInde
 
 console.log('Countries with states:', geoIndex.hasStates.length)
 console.log('Countries with cities:', geoIndex.hasCities.length)
+console.log('Simplifications rejected as broken (used raw geometry instead):', brokenSimplifications)
 console.log('Done.')

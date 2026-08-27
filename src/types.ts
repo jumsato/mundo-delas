@@ -8,6 +8,10 @@ export interface VisitEntry {
   name: string
   juliana: boolean
   isa: boolean
+  // set for level 'state' and 'city' so a mark can bubble up to its ancestors
+  // (e.g. a visited city lights up its state and country on the wider maps)
+  countryId?: string
+  stateId?: string
 }
 
 // keyed by `${level}:${id}`

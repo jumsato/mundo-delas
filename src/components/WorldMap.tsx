@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps'
 import { geoCentroid } from 'd3-geo'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import worldTopoJson from '../data/world-110m.json'
 import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
@@ -13,7 +14,7 @@ const MIN_ZOOM = 1
 const MAX_ZOOM = 16
 const ZOOM_STEP = 2.6
 const MODAL_ZOOM_TRIGGER = 10
-const AVATAR_BASE_SIZE = 9
+const AVATAR_BASE_SIZE = 11
 
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
@@ -35,6 +36,12 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
+
+  // A mark made on a state or city bubbles up here so the whole country lights up too.
+  const countryStatus = useMemo(
+    () => aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId)),
+    [visits],
+  )
 
   function handleCountryClick(geo: { id: string; properties: { name: string } }) {
     const id = String(geo.id)
@@ -58,20 +65,18 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   }
 
   function statusFill(id: string) {
-    const key = `country:${id}`
-    const visit = visits[key]
-    if (visit?.juliana && visit?.isa) return COLOR_TOGETHER
-    if (visit?.[person]) return PERSON_COLOR[person]
+    const status = countryStatus.get(id)
+    if (status?.juliana && status?.isa) return COLOR_TOGETHER
+    if (status?.[person]) return PERSON_COLOR[person]
     const other: Person = person === 'juliana' ? 'isa' : 'juliana'
-    if (visit?.[other]) return PERSON_COLOR[other]
+    if (status?.[other]) return PERSON_COLOR[other]
+    const key = `country:${id}`
     if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
     return COLOR_NONE
   }
 
   const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
   const avatarSize = AVATAR_BASE_SIZE / position.zoom
-
-  const countryVisits = Object.values(visits).filter((v) => v.level === 'country' && (v.juliana || v.isa))
 
   return (
     <div className="map-wrap">
@@ -137,11 +142,11 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
                       />
                     )
                   })}
-                  {countryVisits.map((v) => {
-                    const coords = centroidById.get(v.id)
+                  {[...countryStatus.entries()].map(([id, status]) => {
+                    const coords = centroidById.get(id)
                     if (!coords) return null
-                    const src = v.juliana && v.isa ? togetherAvatar : PERSON_AVATAR[v.juliana ? 'juliana' : 'isa']
-                    return <MapAvatar key={v.id} id={`country-${v.id}`} coordinates={coords} src={src} size={avatarSize} />
+                    const src = status.juliana && status.isa ? togetherAvatar : PERSON_AVATAR[status.juliana ? 'juliana' : 'isa']
+                    return <MapAvatar key={id} id={`country-${id}`} coordinates={coords} src={src} size={avatarSize} />
                   })}
                 </>
               )

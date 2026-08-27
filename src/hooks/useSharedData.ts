@@ -47,11 +47,18 @@ export function useSharedData() {
     return () => unsubs.forEach((u) => u())
   }, [])
 
-  async function setVisited(level: Level, id: string, name: string, person: Person, visited: boolean) {
+  async function setVisited(
+    level: Level,
+    id: string,
+    name: string,
+    person: Person,
+    visited: boolean,
+    parent?: { countryId?: string; stateId?: string },
+  ) {
     await ready
     await setDoc(
       doc(db, 'visits', key(level, id)),
-      { level, id, name, [person]: visited },
+      { level, id, name, [person]: visited, ...(parent?.countryId ? { countryId: parent.countryId } : {}), ...(parent?.stateId ? { stateId: parent.stateId } : {}) },
       { merge: true },
     )
   }

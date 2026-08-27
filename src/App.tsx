@@ -10,6 +10,7 @@ import { useSharedData } from './hooks/useSharedData'
 import geoIndex from './data/geo-index.json'
 import type { CityEntry, Level } from './types'
 import type { Feature } from 'geojson'
+import { aggregateVisits } from './lib/aggregateVisits'
 import './App.css'
 
 interface CountryNav {
@@ -33,6 +34,8 @@ interface Selected {
   level: Level
   id: string
   name: string
+  countryId?: string
+  stateId?: string
 }
 
 const hasStates = new Set(geoIndex.hasStates)
@@ -45,10 +48,11 @@ function App() {
   const [selected, setSelected] = useState<Selected | null>(null)
 
   const stats = useMemo(() => {
-    const countryVisits = Object.values(visits).filter((v) => v.level === 'country' && (v.juliana || v.isa))
+    const countryStatus = aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId))
+    const statuses = [...countryStatus.values()]
     return {
-      together: countryVisits.filter((v) => v.juliana && v.isa).length,
-      total: countryVisits.length,
+      together: statuses.filter((s) => s.juliana && s.isa).length,
+      total: statuses.length,
     }
   }, [visits])
 
@@ -70,19 +74,20 @@ function App() {
     if (hasCities.has(nav.id)) {
       setNav({ level: 'state', id: props.id, name: props.name, countryId: nav.id, countryName: nav.name, feature })
     } else {
-      setSelected({ level: 'state', id: props.id, name: props.name })
+      setSelected({ level: 'state', id: props.id, name: props.name, countryId: nav.id })
     }
   }
 
   function handleCityChosen(city: CityEntry) {
-    setSelected({ level: 'city', id: city.id, name: city.name })
+    if (nav?.level !== 'state') return
+    setSelected({ level: 'city', id: city.id, name: city.name, countryId: nav.countryId, stateId: nav.id })
   }
 
   function handleSelectFromSidebar(level: Level, id: string) {
     const visit = visits[`${level}:${id}`]
     const wishlistEntry = wishlists[person!][`${level}:${id}`] ?? wishlists.shared[`${level}:${id}`]
     const name = visit?.name ?? wishlistEntry?.name
-    if (name) setSelected({ level, id, name })
+    if (name) setSelected({ level, id, name, countryId: visit?.countryId, stateId: visit?.stateId })
   }
 
   return (
@@ -132,7 +137,7 @@ function App() {
             <button
               type="button"
               className="btn-mark-crumb"
-              onClick={() => setSelected({ level: 'state', id: nav.id, name: nav.name })}
+              onClick={() => setSelected({ level: 'state', id: nav.id, name: nav.name, countryId: nav.countryId })}
             >
               Marcar estado
             </button>
@@ -183,7 +188,12 @@ function App() {
           visit={visits[`${selected.level}:${selected.id}`]}
           myWishlist={wishlists[person]}
           sharedWishlist={wishlists.shared}
-          onSetVisited={(visited) => setVisited(selected.level, selected.id, selected.name, person, visited)}
+          onSetVisited={(visited) =>
+            setVisited(selected.level, selected.id, selected.name, person, visited, {
+              countryId: selected.countryId,
+              stateId: selected.stateId,
+            })
+          }
           onToggleMyWishlist={() =>
             wishlists[person][`${selected.level}:${selected.id}`]
               ? removeFromWishlist(person, selected.level, selected.id)

@@ -6,12 +6,13 @@ import type { Feature, FeatureCollection } from 'geojson'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
 
-const AVATAR_SIZE = 10
+const AVATAR_SIZE = 12
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
 interface StateFeature extends Feature {
@@ -45,18 +46,19 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
 
   const projection = useMemo(() => (data ? fitProjection(data) : null), [data])
 
-  const stateVisits = useMemo(
-    () => Object.values(visits).filter((v) => v.level === 'state' && (v.juliana || v.isa)),
+  // A mark made on a city bubbles up here so the whole state lights up too.
+  const stateStatus = useMemo(
+    () => aggregateVisits(visits, (v) => (v.level === 'state' ? v.id : v.level === 'city' ? v.stateId : undefined)),
     [visits],
   )
 
   function statusFill(id: string) {
-    const key = `state:${id}`
-    const visit = visits[key]
-    if (visit?.juliana && visit?.isa) return COLOR_TOGETHER
-    if (visit?.[person]) return PERSON_COLOR[person]
+    const status = stateStatus.get(id)
+    if (status?.juliana && status?.isa) return COLOR_TOGETHER
+    if (status?.[person]) return PERSON_COLOR[person]
     const other: Person = person === 'juliana' ? 'isa' : 'juliana'
-    if (visit?.[other]) return PERSON_COLOR[other]
+    if (status?.[other]) return PERSON_COLOR[other]
+    const key = `state:${id}`
     if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
     return COLOR_NONE
   }
@@ -114,11 +116,11 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
                     }}
                   />
                 ))}
-                {stateVisits.map((v) => {
-                  const coords = centroidById.get(v.id)
+                {[...stateStatus.entries()].map(([id, status]) => {
+                  const coords = centroidById.get(id)
                   if (!coords) return null
-                  const src = v.juliana && v.isa ? togetherAvatar : PERSON_AVATAR[v.juliana ? 'juliana' : 'isa']
-                  return <MapAvatar key={v.id} id={`state-${v.id}`} coordinates={coords} src={src} size={AVATAR_SIZE} />
+                  const src = status.juliana && status.isa ? togetherAvatar : PERSON_AVATAR[status.juliana ? 'juliana' : 'isa']
+                  return <MapAvatar key={id} id={`state-${id}`} coordinates={coords} src={src} size={AVATAR_SIZE} />
                 })}
               </>
             )

@@ -99,7 +99,7 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
                 id={`city-${city.id}`}
                 coordinates={[city.lon, city.lat]}
                 src={src}
-                size={9}
+                size={12}
                 onClick={() => onCityChosen(city)}
                 onMouseEnter={() => setHoveredName(city.name)}
                 onMouseLeave={() => setHoveredName(null)}
@@ -115,7 +115,7 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
               onMouseLeave={() => setHoveredName(null)}
               style={{ default: { cursor: 'pointer' } }}
             >
-              <circle r={5} fill={statusFill(city.id)} stroke="#ffffff" strokeWidth={1.5} />
+              <circle r={4} fill={statusFill(city.id)} stroke="#ffffff" strokeWidth={1} />
             </Marker>
           )
         })}
