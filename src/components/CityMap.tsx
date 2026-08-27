@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ComposableMap, Geography, Marker } from 'react-simple-maps'
+import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import type { ProjectionFunction } from 'react-simple-maps'
 import type { Feature } from 'geojson'
 import type { CityEntry, Person, VisitRecord, WishlistsByOwner } from '../types'
@@ -44,7 +44,8 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
     [allCities, stateId],
   )
 
-  const projection = useMemo(() => fitProjection({ type: 'FeatureCollection', features: [stateFeature] }), [stateFeature])
+  const stateFC = useMemo(() => ({ type: 'FeatureCollection' as const, features: [stateFeature] }), [stateFeature])
+  const projection = useMemo(() => fitProjection(stateFC), [stateFC])
 
   function statusFill(cityId: string) {
     const key = `city:${cityId}`
@@ -80,14 +81,21 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
         projection={projection as unknown as ProjectionFunction}
         style={{ width: '100%', height: '100%' }}
       >
-        <Geography
-          geography={stateFeature}
-          style={{
-            default: { fill: COLOR_NONE, stroke: MAP_STROKE, strokeWidth: 0.6, outline: 'none' },
-            hover: { fill: COLOR_NONE, stroke: MAP_STROKE, strokeWidth: 0.6, outline: 'none' },
-            pressed: { fill: COLOR_NONE, outline: 'none' },
-          }}
-        />
+        <Geographies geography={stateFC}>
+          {({ geographies }) =>
+            geographies.map((geo) => (
+              <Geography
+                key={geo.rsmKey}
+                geography={geo}
+                style={{
+                  default: { fill: COLOR_NONE, stroke: MAP_STROKE, strokeWidth: 0.6, outline: 'none' },
+                  hover: { fill: COLOR_NONE, stroke: MAP_STROKE, strokeWidth: 0.6, outline: 'none' },
+                  pressed: { fill: COLOR_NONE, outline: 'none' },
+                }}
+              />
+            ))
+          }
+        </Geographies>
         {cities.map((city) => {
           const visit = visits[`city:${city.id}`]
           const visited = visit?.juliana || visit?.isa
