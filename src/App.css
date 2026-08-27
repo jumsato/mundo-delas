@@ -1,11 +1,12 @@
 :root {
-  --bg: #12141c;
-  --panel: #1a1d29;
-  --border: #2a2e40;
-  --text: #eef0f6;
-  --text-dim: #9aa0b4;
-  --accent-visited: #3aa66b;
-  --accent-wishlist: #e0a93c;
+  --bg: #eef1f7;
+  --panel: #ffffff;
+  --border: #dde1ea;
+  --text: #1a1d29;
+  --text-dim: #6b7280;
+  --accent-visited: #22a06b;
+  --accent-wishlist: #f2b545;
+  --accent-together: #c15fe0;
 }
 
 * {
@@ -34,6 +35,7 @@ body {
 .app-header {
   padding: 1rem 1.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
+  background: var(--panel);
 }
 
 .app-header h1 {
@@ -45,6 +47,56 @@ body {
   margin: 0;
   color: var(--text-dim);
   font-size: 0.9rem;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.crumb {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+
+.crumb:hover:not(:disabled) {
+  background: var(--bg);
+}
+
+.crumb:disabled {
+  cursor: default;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.crumb-sep {
+  color: var(--text-dim);
+}
+
+.btn-mark-crumb {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.btn-mark-crumb:hover {
+  border-color: var(--accent-visited);
 }
 
 .app-main {
@@ -59,6 +111,7 @@ body {
   flex-direction: column;
   min-width: 0;
   position: relative;
+  background: var(--bg);
 }
 
 .map-toolbar {
@@ -67,6 +120,7 @@ body {
   gap: 0.75rem;
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--border);
+  background: var(--panel);
 }
 
 .map-toolbar button {
@@ -89,8 +143,14 @@ body {
   font-size: 0.85rem;
 }
 
+.map-inline-message {
+  padding: 2rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
 .sidebar {
-  width: 280px;
+  width: 300px;
   flex-shrink: 0;
   border-left: 1px solid var(--border);
   background: var(--panel);
@@ -98,12 +158,38 @@ body {
   overflow-y: auto;
 }
 
+.sidebar-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.sidebar-tab {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.sidebar-tab.active {
+  background: var(--accent-visited);
+  border-color: var(--accent-visited);
+  color: #ffffff;
+}
+
 .sidebar-section {
   margin-bottom: 1.5rem;
 }
 
 .sidebar-section h3 {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   margin: 0 0 0.5rem;
   color: var(--text-dim);
   text-transform: uppercase;
@@ -127,14 +213,14 @@ body {
 
 .sidebar-list li {
   padding: 0.4rem 0.6rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
 }
 
 .sidebar-list li:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: #e2e6f0;
 }
 
 .sidebar-ranking li {
@@ -150,7 +236,7 @@ body {
 
 .rank-badge {
   background: var(--accent-wishlist);
-  color: #1a1300;
+  color: #3a2400;
   font-weight: 700;
   font-size: 0.75rem;
   width: 1.4rem;
@@ -165,7 +251,7 @@ body {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(20, 22, 30, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -179,6 +265,20 @@ body {
   padding: 1.75rem;
   width: 320px;
   position: relative;
+  box-shadow: 0 12px 36px rgba(20, 22, 30, 0.18);
+}
+
+.modal-level-tag {
+  display: inline-block;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-bottom: 0.4rem;
 }
 
 .modal-close {
@@ -197,25 +297,19 @@ body {
   margin: 0 0 0.75rem;
 }
 
-.modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
 .btn {
   border: none;
   border-radius: 8px;
   padding: 0.6rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
-  color: #12141c;
+  color: #1a1d29;
   font-weight: 600;
 }
 
 .btn-visited {
   background: var(--accent-visited);
+  color: #ffffff;
 }
 
 .btn-wishlist {
@@ -226,18 +320,6 @@ body {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text);
-}
-
-.modal-status {
-  font-weight: 600;
-}
-
-.modal-status-visited {
-  color: var(--accent-visited);
-}
-
-.modal-status-wishlist {
-  color: var(--accent-wishlist);
 }
 
 .modal-hint {
@@ -253,6 +335,7 @@ body {
   justify-content: center;
   gap: 0.5rem;
   text-align: center;
+  background: var(--bg);
 }
 
 .person-select-options {
@@ -274,6 +357,7 @@ body {
   color: var(--text);
   font-size: 1rem;
   font-weight: 600;
+  box-shadow: 0 6px 18px rgba(20, 22, 30, 0.08);
 }
 
 .person-card:hover {
@@ -292,8 +376,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: rgba(201, 104, 224, 0.15);
-  border: 1px solid #c968e0;
+  background: rgba(193, 95, 224, 0.12);
+  border: 1px solid var(--accent-together);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   margin-bottom: 1rem;

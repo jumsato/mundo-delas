@@ -1,18 +1,20 @@
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
-import type { Person, VisitEntry, WishlistRecord } from '../types'
+import type { Level, Person, VisitEntry, WishlistRecord } from '../types'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
+const LEVEL_LABEL: Record<Level, string> = { country: 'país', state: 'estado', city: 'cidade' }
 
-interface CountryModalProps {
-  countryName: string
+interface EntityModalProps {
+  level: Level
+  entityId: string
+  entityName: string
   person: Person
   visit?: VisitEntry
   myWishlist: WishlistRecord
   sharedWishlist: WishlistRecord
-  countryId: string
   onSetVisited: (visited: boolean) => void
   onToggleMyWishlist: () => void
   onToggleSharedWishlist: () => void
@@ -20,8 +22,9 @@ interface CountryModalProps {
 }
 
 export function CountryModal({
-  countryName,
-  countryId,
+  level,
+  entityId,
+  entityName,
   person,
   visit,
   myWishlist,
@@ -30,13 +33,14 @@ export function CountryModal({
   onToggleMyWishlist,
   onToggleSharedWishlist,
   onClose,
-}: CountryModalProps) {
+}: EntityModalProps) {
   const other: Person = person === 'juliana' ? 'isa' : 'juliana'
   const iVisited = Boolean(visit?.[person])
   const otherVisited = Boolean(visit?.[other])
   const together = iVisited && otherVisited
-  const inMyWishlist = Boolean(myWishlist[countryId])
-  const inSharedWishlist = Boolean(sharedWishlist[countryId])
+  const wishlistKey = `${level}:${entityId}`
+  const inMyWishlist = Boolean(myWishlist[wishlistKey])
+  const inSharedWishlist = Boolean(sharedWishlist[wishlistKey])
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -44,7 +48,8 @@ export function CountryModal({
         <button className="modal-close" type="button" onClick={onClose} aria-label="Fechar">
           ×
         </button>
-        <h2>{countryName}</h2>
+        <span className="modal-level-tag">{LEVEL_LABEL[level]}</span>
+        <h2>{entityName}</h2>
 
         {together && (
           <div className="together-banner">

@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
 import { collection, deleteDoc, doc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore'
 import { db, ready } from '../firebase'
-import type { Person, VisitRecord, WishlistOwner, WishlistRecord, WishlistsByOwner } from '../types'
+import type { Level, Person, VisitRecord, WishlistOwner, WishlistRecord, WishlistsByOwner } from '../types'
 
 const EMPTY_WISHLISTS: WishlistsByOwner = { juliana: {}, isa: {}, shared: {} }
 
 function wishlistCollectionName(owner: WishlistOwner) {
   return `wishlist_${owner}`
+}
+
+function key(level: Level, id: string) {
+  return `${level}:${id}`
 }
 
 export function useSharedData() {
@@ -43,43 +47,44 @@ export function useSharedData() {
     return () => unsubs.forEach((u) => u())
   }, [])
 
-  async function setVisited(countryId: string, countryName: string, person: Person, visited: boolean) {
+  async function setVisited(level: Level, id: string, name: string, person: Person, visited: boolean) {
     await ready
     await setDoc(
-      doc(db, 'visits', countryId),
-      {
-        countryId,
-        countryName,
-        [person]: visited,
-      },
+      doc(db, 'visits', key(level, id)),
+      { level, id, name, [person]: visited },
       { merge: true },
     )
   }
 
-  async function addToWishlist(owner: WishlistOwner, countryId: string, countryName: string) {
+  async function addToWishlist(owner: WishlistOwner, level: Level, id: string, name: string) {
     await ready
     const current = wishlists[owner]
-    if (current[countryId]) return
-    const nextRank = 1 + Object.values(current).reduce((max, e) => Math.max(max, e.rank), 0)
-    await setDoc(doc(db, wishlistCollectionName(owner), countryId), {
-      countryId,
-      countryName,
+    if (current[key(level, id)]) return
+    const nextRank =
+      1 +
+      Object.values(current)
+        .filter((e) => e.level === level)
+        .reduce((max, e) => Math.max(max, e.rank), 0)
+    await setDoc(doc(db, wishlistCollectionName(owner), key(level, id)), {
+      level,
+      id,
+      name,
       rank: nextRank,
     })
   }
 
-  async function removeFromWishlist(owner: WishlistOwner, countryId: string) {
+  async function removeFromWishlist(owner: WishlistOwner, level: Level, id: string) {
     await ready
-    await deleteDoc(doc(db, wishlistCollectionName(owner), countryId))
+    await deleteDoc(doc(db, wishlistCollectionName(owner), key(level, id)))
   }
 
-  async function reorderWishlist(owner: WishlistOwner, orderedIds: string[]) {
+  async function reorderWishlist(owner: WishlistOwner, level: Level, orderedIds: string[]) {
     await ready
     const batch = writeBatch(db)
     const current = wishlists[owner]
     orderedIds.forEach((id, index) => {
-      const entry = current[id]
-      if (entry) batch.set(doc(db, wishlistCollectionName(owner), id), { ...entry, rank: index + 1 })
+      const entry = current[key(level, id)]
+      if (entry) batch.set(doc(db, wishlistCollectionName(owner), key(level, id)), { ...entry, rank: index + 1 })
     })
     await batch.commit()
   }

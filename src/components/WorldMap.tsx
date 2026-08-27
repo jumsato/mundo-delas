@@ -3,19 +3,12 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simp
 import { geoCentroid } from 'd3-geo'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import worldTopoJson from '../data/world-110m.json'
+import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 16
 const ZOOM_STEP = 2.6
 const MODAL_ZOOM_TRIGGER = 10
-
-const COLOR_NONE = '#3a3f52'
-const COLOR_WISHLIST = '#e0a93c'
-const COLOR_TOGETHER = '#c968e0'
-const PERSON_COLOR: Record<Person, string> = {
-  juliana: '#4f8fe0',
-  isa: '#e0703c',
-}
 
 interface Position {
   coordinates: [number, number]
@@ -58,12 +51,13 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   }
 
   function statusFill(id: string) {
-    const visit = visits[id]
+    const key = `country:${id}`
+    const visit = visits[key]
     if (visit?.juliana && visit?.isa) return COLOR_TOGETHER
     if (visit?.[person]) return PERSON_COLOR[person]
     const other: Person = person === 'juliana' ? 'isa' : 'juliana'
     if (visit?.[other]) return PERSON_COLOR[other]
-    if (wishlists[person][id] || wishlists.shared[id]) return COLOR_WISHLIST
+    if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
     return COLOR_NONE
   }
 
@@ -107,14 +101,14 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
                     style={{
                       default: {
                         fill: statusFill(id),
-                        stroke: '#1b1e29',
+                        stroke: MAP_STROKE,
                         strokeWidth: 0.4,
                         outline: 'none',
                       },
                       hover: {
                         fill: statusFill(id),
                         opacity: 0.8,
-                        stroke: '#1b1e29',
+                        stroke: MAP_STROKE,
                         strokeWidth: 0.5,
                         outline: 'none',
                         cursor: 'pointer',
