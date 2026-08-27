@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Level, Person, VisitRecord, WishlistOwner, WishlistRecord } from '../types'
+import { COLOR_TOGETHER, PERSON_COLOR, wishlistColor } from '../lib/colors'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
 const LEVEL_TABS: { level: Level; label: string }[] = [
@@ -10,13 +11,14 @@ const LEVEL_TABS: { level: Level; label: string }[] = [
 
 interface RankingListProps {
   title: string
+  color: string
   entries: WishlistRecord
   level: Level
   onReorder: (orderedIds: string[]) => void
   onSelectEntity: (level: Level, id: string) => void
 }
 
-function RankingList({ title, entries, level, onReorder, onSelectEntity }: RankingListProps) {
+function RankingList({ title, color, entries, level, onReorder, onSelectEntity }: RankingListProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const ordered = Object.values(entries)
     .filter((e) => e.level === level)
@@ -50,10 +52,38 @@ function RankingList({ title, entries, level, onReorder, onSelectEntity }: Ranki
             onClick={() => onSelectEntity(level, e.id)}
             className={dragId === e.id ? 'dragging' : ''}
           >
-            <span className="rank-badge">{e.rank}</span> {e.name}
+            <span className="rank-badge" style={{ background: color }}>
+              {e.rank}
+            </span>{' '}
+            {e.name}
           </li>
         ))}
       </ol>
+    </div>
+  )
+}
+
+interface ColorListProps {
+  title: string
+  color: string
+  entries: { id: string; name: string }[]
+  onSelectEntity: (id: string) => void
+}
+
+function ColorList({ title, color, entries, onSelectEntity }: ColorListProps) {
+  return (
+    <div className="sidebar-section">
+      <h3>
+        {title} ({entries.length})
+      </h3>
+      {entries.length === 0 && <p className="sidebar-empty">Nenhum ainda.</p>}
+      <ul className="sidebar-list">
+        {entries.map((e) => (
+          <li key={e.id} onClick={() => onSelectEntity(e.id)}>
+            <span className="color-dot" style={{ background: color }} /> {e.name}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
@@ -91,46 +121,30 @@ export function Sidebar({ person, visits, myWishlist, sharedWishlist, onReorderW
         ))}
       </div>
 
-      <div className="sidebar-section">
-        <h3>Visitamos juntas ({together.length})</h3>
-        {together.length === 0 && <p className="sidebar-empty">Nenhum ainda.</p>}
-        <ul className="sidebar-list">
-          {together.map((v) => (
-            <li key={v.id} onClick={() => onSelectEntity(activeLevel, v.id)}>
-              {v.name}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ColorList
+        title="Visitamos juntas"
+        color={COLOR_TOGETHER}
+        entries={together}
+        onSelectEntity={(id) => onSelectEntity(activeLevel, id)}
+      />
 
-      <div className="sidebar-section">
-        <h3>Só eu visitei ({mine.length})</h3>
-        {mine.length === 0 && <p className="sidebar-empty">Nenhum ainda.</p>}
-        <ul className="sidebar-list">
-          {mine.map((v) => (
-            <li key={v.id} onClick={() => onSelectEntity(activeLevel, v.id)}>
-              {v.name}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ColorList
+        title="Só eu visitei"
+        color={PERSON_COLOR[person]}
+        entries={mine}
+        onSelectEntity={(id) => onSelectEntity(activeLevel, id)}
+      />
 
-      <div className="sidebar-section">
-        <h3>
-          Só {PERSON_LABEL[other]} visitou ({theirs.length})
-        </h3>
-        {theirs.length === 0 && <p className="sidebar-empty">Nenhum ainda.</p>}
-        <ul className="sidebar-list">
-          {theirs.map((v) => (
-            <li key={v.id} onClick={() => onSelectEntity(activeLevel, v.id)}>
-              {v.name}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ColorList
+        title={`Só ${PERSON_LABEL[other]} visitou`}
+        color={PERSON_COLOR[other]}
+        entries={theirs}
+        onSelectEntity={(id) => onSelectEntity(activeLevel, id)}
+      />
 
       <RankingList
         title="Minha lista de desejos"
+        color={wishlistColor(person)}
         entries={myWishlist}
         level={activeLevel}
         onReorder={(ids) => onReorderWishlist(person, activeLevel, ids)}
@@ -139,6 +153,7 @@ export function Sidebar({ person, visits, myWishlist, sharedWishlist, onReorderW
 
       <RankingList
         title="Lista de desejos compartilhada"
+        color={wishlistColor('shared')}
         entries={sharedWishlist}
         level={activeLevel}
         onReorder={(ids) => onReorderWishlist('shared', activeLevel, ids)}

@@ -1,21 +1,16 @@
 import { useCallback, useState } from 'react'
 import type { Person } from '../types'
 
-const STORAGE_KEY = 'mundo-delas:person:v1'
-
+// Deliberately not persisted: every visit to the app should ask who is using it,
+// since it's shared between two people on their own devices.
 export function usePerson() {
-  const [person, setPersonState] = useState<Person | null>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored === 'juliana' || stored === 'isa' ? stored : null
-  })
+  const [person, setPersonState] = useState<Person | null>(null)
 
   const setPerson = useCallback((next: Person) => {
-    localStorage.setItem(STORAGE_KEY, next)
     setPersonState(next)
   }, [])
 
   const clearPerson = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
     setPersonState(null)
   }, [])
 

@@ -4,7 +4,7 @@ import type { ProjectionFunction } from 'react-simple-maps'
 import type { Feature } from 'geojson'
 import type { CityEntry, Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
-import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { COLOR_NONE, MAP_STROKE, statusFill } from '../lib/colors'
 import { MapAvatar } from './MapAvatar'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
@@ -47,15 +47,15 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
   const stateFC = useMemo(() => ({ type: 'FeatureCollection' as const, features: [stateFeature] }), [stateFeature])
   const projection = useMemo(() => fitProjection(stateFC), [stateFC])
 
-  function statusFill(cityId: string) {
+  const other: Person = person === 'juliana' ? 'isa' : 'juliana'
+
+  function fillFor(cityId: string) {
     const key = `city:${cityId}`
-    const visit = visits[key]
-    if (visit?.juliana && visit?.isa) return COLOR_TOGETHER
-    if (visit?.[person]) return PERSON_COLOR[person]
-    const other: Person = person === 'juliana' ? 'isa' : 'juliana'
-    if (visit?.[other]) return PERSON_COLOR[other]
-    if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
-    return '#9098ac'
+    return statusFill(
+      visits[key],
+      { mine: Boolean(wishlists[person][key]), shared: Boolean(wishlists.shared[key]), other: Boolean(wishlists[other][key]) },
+      person,
+    )
   }
 
   if (error) {
@@ -123,7 +123,7 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
               onMouseLeave={() => setHoveredName(null)}
               style={{ default: { cursor: 'pointer' } }}
             >
-              <circle r={4} fill={statusFill(city.id)} stroke="#ffffff" strokeWidth={1} />
+              <circle r={4} fill={fillFor(city.id)} stroke="#ffffff" strokeWidth={1} />
             </Marker>
           )
         })}

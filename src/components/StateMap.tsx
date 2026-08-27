@@ -5,7 +5,7 @@ import { geoCentroid } from 'd3-geo'
 import type { Feature, FeatureCollection } from 'geojson'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
-import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
@@ -52,15 +52,15 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
     [visits],
   )
 
-  function statusFill(id: string) {
-    const status = stateStatus.get(id)
-    if (status?.juliana && status?.isa) return COLOR_TOGETHER
-    if (status?.[person]) return PERSON_COLOR[person]
-    const other: Person = person === 'juliana' ? 'isa' : 'juliana'
-    if (status?.[other]) return PERSON_COLOR[other]
+  const other: Person = person === 'juliana' ? 'isa' : 'juliana'
+
+  function fillFor(id: string) {
     const key = `state:${id}`
-    if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
-    return COLOR_NONE
+    return statusFill(
+      stateStatus.get(id),
+      { mine: Boolean(wishlists[person][key]), shared: Boolean(wishlists.shared[key]), other: Boolean(wishlists[other][key]) },
+      person,
+    )
   }
 
   if (error) {
@@ -99,13 +99,13 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
                     onMouseLeave={() => setHoveredName(null)}
                     style={{
                       default: {
-                        fill: statusFill(geo.properties.id),
+                        fill: fillFor(geo.properties.id),
                         stroke: MAP_STROKE,
                         strokeWidth: 0.6,
                         outline: 'none',
                       },
                       hover: {
-                        fill: statusFill(geo.properties.id),
+                        fill: fillFor(geo.properties.id),
                         opacity: 0.8,
                         stroke: MAP_STROKE,
                         strokeWidth: 0.8,

@@ -4,9 +4,12 @@
   --border: #dde1ea;
   --text: #1a1d29;
   --text-dim: #6b7280;
-  --accent-visited: #22a06b;
+  --accent-visited: #1f9d55;
   --accent-wishlist: #f2b545;
-  --accent-together: #c15fe0;
+  --accent-together: #e64980;
+  --accent-action: #2f6fed;
+  --juliana: #1f9d55;
+  --isa: #8b3fd1;
 }
 
 * {
@@ -85,18 +88,21 @@ body {
 }
 
 .btn-mark-crumb {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: var(--accent-action);
+  border: 1px solid var(--accent-action);
+  color: #ffffff;
+  font-weight: 600;
   font-size: 0.78rem;
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.75rem;
   border-radius: 999px;
   cursor: pointer;
   margin-right: 0.5rem;
+  box-shadow: 0 2px 6px rgba(47, 111, 237, 0.35);
 }
 
 .btn-mark-crumb:hover {
-  border-color: var(--accent-visited);
+  background: #2560d1;
+  border-color: #2560d1;
 }
 
 .app-main {
@@ -244,7 +250,7 @@ body {
 
 .rank-badge {
   background: var(--accent-wishlist);
-  color: #3a2400;
+  color: #1a1d29;
   font-weight: 700;
   font-size: 0.75rem;
   width: 1.4rem;
@@ -254,6 +260,14 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.color-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.15rem;
 }
 
 .modal-backdrop {

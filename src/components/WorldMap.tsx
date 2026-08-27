@@ -3,7 +3,7 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simp
 import { geoCentroid } from 'd3-geo'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import worldTopoJson from '../data/world-110m.json'
-import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
@@ -64,15 +64,15 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
     setFocusedId(null)
   }
 
-  function statusFill(id: string) {
-    const status = countryStatus.get(id)
-    if (status?.juliana && status?.isa) return COLOR_TOGETHER
-    if (status?.[person]) return PERSON_COLOR[person]
-    const other: Person = person === 'juliana' ? 'isa' : 'juliana'
-    if (status?.[other]) return PERSON_COLOR[other]
+  const other: Person = person === 'juliana' ? 'isa' : 'juliana'
+
+  function fillFor(id: string) {
     const key = `country:${id}`
-    if (wishlists[person][key] || wishlists.shared[key]) return COLOR_WISHLIST
-    return COLOR_NONE
+    return statusFill(
+      countryStatus.get(id),
+      { mine: Boolean(wishlists[person][key]), shared: Boolean(wishlists.shared[key]), other: Boolean(wishlists[other][key]) },
+      person,
+    )
   }
 
   const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
@@ -121,13 +121,13 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
                         onMouseLeave={() => setHoveredName(null)}
                         style={{
                           default: {
-                            fill: statusFill(id),
+                            fill: fillFor(id),
                             stroke: MAP_STROKE,
                             strokeWidth: 0.4,
                             outline: 'none',
                           },
                           hover: {
-                            fill: statusFill(id),
+                            fill: fillFor(id),
                             opacity: 0.8,
                             stroke: MAP_STROKE,
                             strokeWidth: 0.5,
