@@ -165,6 +165,7 @@ function App() {
         {nav?.level === 'country' && (
           <StateMap
             countryId={nav.id}
+            countryName={nav.name}
             person={person}
             visits={visits}
             wishlists={wishlists}
@@ -174,6 +175,7 @@ function App() {
         {nav?.level === 'state' && (
           <CityMap
             countryId={nav.countryId}
+            countryName={nav.countryName}
             stateId={nav.id}
             stateFeature={nav.feature}
             person={person}

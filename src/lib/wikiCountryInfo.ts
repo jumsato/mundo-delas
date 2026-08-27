@@ -1,4 +1,5 @@
 export interface CountryGuideInfo {
+  title: string
   extract: string
   thumbnail?: string
   pageUrl: string
@@ -37,6 +38,7 @@ async function fetchSummary(lang: 'pt' | 'en', title: string): Promise<CountryGu
   const data = (await res.json()) as SummaryResponse
   if (data.type === 'disambiguation' || !data.extract) return null
   return {
+    title,
     extract: data.extract,
     thumbnail: data.thumbnail?.source,
     pageUrl: data.content_urls?.desktop?.page ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`,
@@ -62,4 +64,39 @@ export function fetchCountryGuide(englishName: string): Promise<CountryGuideInfo
     cache.set(englishName, loadCountryGuide(englishName))
   }
   return cache.get(englishName)!
+}
+
+const SKIP_IMAGE_PATTERN = /flag|coat_of_arms|locator|orthographic|\.svg$|map|escudo|bandeira|brasão|logo|icon/i
+
+interface ImagePage {
+  title: string
+  imageinfo?: { thumburl?: string; url?: string; width?: number }[]
+}
+
+interface ImagesResponse {
+  query?: { pages?: Record<string, ImagePage> }
+}
+
+async function loadCountryPhotos(lang: 'pt' | 'en', title: string): Promise<string[]> {
+  const url = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&generator=images&gimlimit=25&prop=imageinfo&iiprop=url|size&iiurlwidth=360&format=json&origin=*`
+  const res = await fetch(url)
+  if (!res.ok) return []
+  const data = (await res.json()) as ImagesResponse
+  const pages = Object.values(data.query?.pages ?? {})
+  return pages
+    .filter((p) => !SKIP_IMAGE_PATTERN.test(p.title))
+    .map((p) => p.imageinfo?.[0])
+    .filter((info): info is NonNullable<typeof info> => Boolean(info?.thumburl) && (info?.width ?? 0) > 200)
+    .slice(0, 6)
+    .map((info) => info.thumburl!)
+}
+
+const photoCache = new Map<string, Promise<string[]>>()
+
+export function fetchCountryPhotos(lang: 'pt' | 'en', title: string): Promise<string[]> {
+  const cacheKey = `${lang}:${title}`
+  if (!photoCache.has(cacheKey)) {
+    photoCache.set(cacheKey, loadCountryPhotos(lang, title).catch(() => []))
+  }
+  return photoCache.get(cacheKey)!
 }

@@ -8,6 +8,7 @@ import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
+import { CountryInfoTrigger } from './CountryInfoTrigger'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -21,13 +22,14 @@ interface StateFeature extends Feature {
 
 interface StateMapProps {
   countryId: string
+  countryName: string
   person: Person
   visits: VisitRecord
   wishlists: WishlistsByOwner
   onStateChosen: (feature: StateFeature) => void
 }
 
-export function StateMap({ countryId, person, visits, wishlists, onStateChosen }: StateMapProps) {
+export function StateMap({ countryId, countryName, person, visits, wishlists, onStateChosen }: StateMapProps) {
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
@@ -73,6 +75,7 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
 
   return (
     <div className="map-wrap">
+      <CountryInfoTrigger countryId={countryId} countryName={countryName} />
       <div className="map-toolbar">
         <span className="map-hint">{hoveredName ?? 'Clique em um estado/província'}</span>
       </div>

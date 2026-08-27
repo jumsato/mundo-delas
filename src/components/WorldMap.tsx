@@ -6,6 +6,7 @@ import worldTopoJson from '../data/world-110m.json'
 import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
+import { CountryInfoTrigger } from './CountryInfoTrigger'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -41,6 +42,7 @@ interface WorldMapProps {
 export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMapProps) {
   const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
   const [focusedId, setFocusedId] = useState<string | null>(null)
+  const [focusedName, setFocusedName] = useState<string | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
 
@@ -70,6 +72,7 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
     const centroid = geoCentroid(geo as never)
     const nextZoom = Math.min(position.zoom * ZOOM_STEP, MAX_ZOOM)
     setFocusedId(id)
+    setFocusedName(name)
     animateTo({ coordinates: centroid as [number, number], zoom: nextZoom })
   }
 
@@ -77,6 +80,7 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
     if (isAnimating) return
     animateTo(DEFAULT_POSITION)
     setFocusedId(null)
+    setFocusedName(null)
   }
 
   const other: Person = person === 'juliana' ? 'isa' : 'juliana'
@@ -95,6 +99,7 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
 
   return (
     <div className={isAnimating ? 'map-wrap map-wrap-animating' : 'map-wrap'}>
+      {closeToModal && focusedId && focusedName && <CountryInfoTrigger countryId={focusedId} countryName={focusedName} />}
       <div className="map-toolbar">
         <button type="button" onClick={handleReset} disabled={position.zoom === MIN_ZOOM}>
           Ver mundo inteiro

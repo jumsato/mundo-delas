@@ -234,6 +234,102 @@ body {
   font-size: 0.85rem;
 }
 
+.country-info-fab {
+  position: absolute;
+  top: 3.4rem;
+  right: 0.75rem;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(20, 22, 30, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.country-info-fab:hover {
+  transform: scale(1.08);
+}
+
+.info-card {
+  width: 420px;
+  max-height: 85vh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-card .modal-close {
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  top: 0.6rem;
+  right: 0.6rem;
+}
+
+.info-hero {
+  height: 160px;
+  flex-shrink: 0;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
+.info-hero-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.65) 100%);
+}
+
+.info-hero-title {
+  position: relative;
+  color: #ffffff;
+  margin: 0;
+  padding: 1rem 3rem 0.9rem 1.25rem;
+  font-size: 1.3rem;
+}
+
+.info-title-plain {
+  margin: 1.75rem 1.25rem 0;
+}
+
+.info-body {
+  padding: 1.1rem 1.25rem 1.5rem;
+  overflow-y: auto;
+}
+
+.info-extract {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0 0 0.4rem;
+}
+
+.info-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+
+.info-gallery img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 .map-inline-message {
   padding: 2rem;
   color: var(--text-dim);

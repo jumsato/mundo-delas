@@ -6,6 +6,7 @@ import type { CityEntry, Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, MAP_STROKE, statusFill } from '../lib/colors'
 import { MapAvatar } from './MapAvatar'
+import { CountryInfoTrigger } from './CountryInfoTrigger'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -14,6 +15,7 @@ const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isa
 
 interface CityMapProps {
   countryId: string
+  countryName: string
   stateId: string
   stateFeature: Feature
   person: Person
@@ -22,7 +24,7 @@ interface CityMapProps {
   onCityChosen: (city: CityEntry) => void
 }
 
-export function CityMap({ countryId, stateId, stateFeature, person, visits, wishlists, onCityChosen }: CityMapProps) {
+export function CityMap({ countryId, countryName, stateId, stateFeature, person, visits, wishlists, onCityChosen }: CityMapProps) {
   const [allCities, setAllCities] = useState<CityEntry[] | null>(null)
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
@@ -72,6 +74,7 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
 
   return (
     <div className="map-wrap">
+      <CountryInfoTrigger countryId={countryId} countryName={countryName} />
       <div className="map-toolbar">
         <span className="map-hint">{hoveredName ?? 'Clique em uma cidade'}</span>
       </div>

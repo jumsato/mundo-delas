@@ -5,7 +5,6 @@ import togetherAvatar from '../assets/avatars/together.jpeg'
 import type { Level, Person, PersonVisitMeta, VisitEntry, WishlistRecord } from '../types'
 import { PERSON_COLOR, wishlistColor } from '../lib/colors'
 import { resizeImageFile } from '../lib/resizeImage'
-import { CountryGuide } from './CountryGuide'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
@@ -215,8 +214,6 @@ export function CountryModal({
             onClear={onToggleSharedWishlist}
           />
         </div>
-
-        {level === 'country' && <CountryGuide countryId={entityId} countryName={entityName} />}
       </div>
     </div>
   )
