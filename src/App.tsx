@@ -5,6 +5,8 @@ import { CityMap } from './components/CityMap'
 import { CountryModal } from './components/CountryModal'
 import { Sidebar } from './components/Sidebar'
 import { PersonSelector } from './components/PersonSelector'
+import { CountrySearch } from './components/CountrySearch'
+import { StatsPanel } from './components/StatsPanel'
 import { usePerson } from './hooks/usePerson'
 import { useSharedData } from './hooks/useSharedData'
 import geoIndex from './data/geo-index.json'
@@ -43,9 +45,10 @@ const hasCities = new Set(geoIndex.hasCities)
 
 function App() {
   const { person, setPerson } = usePerson()
-  const { visits, wishlists, setVisited, addToWishlist, removeFromWishlist, reorderWishlist } = useSharedData()
+  const { visits, wishlists, setVisited, setVisitMeta, addToWishlist, removeFromWishlist, reorderWishlist } = useSharedData()
   const [nav, setNav] = useState<Nav>(null)
   const [selected, setSelected] = useState<Selected | null>(null)
+  const [showStats, setShowStats] = useState(false)
 
   const stats = useMemo(() => {
     const countryStatus = aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId))
@@ -93,10 +96,20 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>Mundo Delas</h1>
-        <p className="app-subtitle">
-          {stats.total} países marcados · {stats.together} visitados juntas
-        </p>
+        <div className="app-header-top">
+          <div>
+            <h1>Mundo Delas</h1>
+            <p className="app-subtitle">
+              {stats.total} países marcados · {stats.together} visitados juntas
+            </p>
+          </div>
+          <div className="app-header-actions">
+            <CountrySearch onSelect={handleCountryChosen} />
+            <button type="button" className="btn-stats" onClick={() => setShowStats(true)}>
+              📊 Estatísticas
+            </button>
+          </div>
+        </div>
       </header>
 
       <div className="breadcrumb">
@@ -194,6 +207,7 @@ function App() {
               stateId: selected.stateId,
             })
           }
+          onUpdateMeta={(patch) => setVisitMeta(selected.level, selected.id, person, patch)}
           onToggleMyWishlist={() =>
             wishlists[person][`${selected.level}:${selected.id}`]
               ? removeFromWishlist(person, selected.level, selected.id)
@@ -207,6 +221,8 @@ function App() {
           onClose={() => setSelected(null)}
         />
       )}
+
+      {showStats && <StatsPanel person={person} visits={visits} onClose={() => setShowStats(false)} />}
     </div>
   )
 }

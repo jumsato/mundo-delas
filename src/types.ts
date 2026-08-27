@@ -2,6 +2,12 @@ export type Person = 'juliana' | 'isa'
 export type WishlistOwner = Person | 'shared'
 export type Level = 'country' | 'state' | 'city'
 
+export interface PersonVisitMeta {
+  date?: string
+  note?: string
+  photo?: string
+}
+
 export interface VisitEntry {
   level: Level
   id: string
@@ -12,6 +18,7 @@ export interface VisitEntry {
   // (e.g. a visited city lights up its state and country on the wider maps)
   countryId?: string
   stateId?: string
+  meta?: Partial<Record<Person, PersonVisitMeta>>
 }
 
 // keyed by `${level}:${id}`
