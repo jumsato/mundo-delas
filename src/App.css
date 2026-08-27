@@ -114,6 +114,14 @@ body {
   background: var(--bg);
 }
 
+/* react-simple-maps snaps center/zoom changes instantly by default; animate
+   the underlying group so clicking to zoom in feels smooth instead of a jump cut. */
+.map-wrap .rsm-zoomable-group {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+
 .map-toolbar {
   display: flex;
   align-items: center;
