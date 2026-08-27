@@ -1,10 +1,20 @@
-export type VisitStatus = 'visited' | 'wishlist'
+export type Person = 'juliana' | 'isa'
+export type WishlistOwner = Person | 'shared'
 
-export interface CountryEntry {
-  id: string
-  name: string
-  status: VisitStatus
-  rank?: number
+export interface VisitEntry {
+  countryId: string
+  countryName: string
+  juliana: boolean
+  isa: boolean
 }
 
-export type CountryRecord = Record<string, CountryEntry>
+export type VisitRecord = Record<string, VisitEntry>
+
+export interface WishlistEntry {
+  countryId: string
+  countryName: string
+  rank: number
+}
+
+export type WishlistRecord = Record<string, WishlistEntry>
+export type WishlistsByOwner = Record<WishlistOwner, WishlistRecord>

@@ -1,13 +1,21 @@
 import { useState } from 'react'
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps'
 import { geoCentroid } from 'd3-geo'
-import type { CountryRecord } from '../types'
+import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import worldTopoJson from '../data/world-110m.json'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 16
 const ZOOM_STEP = 2.6
 const MODAL_ZOOM_TRIGGER = 10
+
+const COLOR_NONE = '#3a3f52'
+const COLOR_WISHLIST = '#e0a93c'
+const COLOR_TOGETHER = '#c968e0'
+const PERSON_COLOR: Record<Person, string> = {
+  juliana: '#4f8fe0',
+  isa: '#e0703c',
+}
 
 interface Position {
   coordinates: [number, number]
@@ -17,11 +25,13 @@ interface Position {
 const DEFAULT_POSITION: Position = { coordinates: [0, 15], zoom: MIN_ZOOM }
 
 interface WorldMapProps {
-  records: CountryRecord
+  person: Person
+  visits: VisitRecord
+  wishlists: WishlistsByOwner
   onCountryChosen: (id: string, name: string) => void
 }
 
-export function WorldMap({ records, onCountryChosen }: WorldMapProps) {
+export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMapProps) {
   const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
@@ -48,10 +58,13 @@ export function WorldMap({ records, onCountryChosen }: WorldMapProps) {
   }
 
   function statusFill(id: string) {
-    const entry = records[String(id)]
-    if (!entry) return '#3a3f52'
-    if (entry.status === 'visited') return '#3aa66b'
-    return '#e0a93c'
+    const visit = visits[id]
+    if (visit?.juliana && visit?.isa) return COLOR_TOGETHER
+    if (visit?.[person]) return PERSON_COLOR[person]
+    const other: Person = person === 'juliana' ? 'isa' : 'juliana'
+    if (visit?.[other]) return PERSON_COLOR[other]
+    if (wishlists[person][id] || wishlists.shared[id]) return COLOR_WISHLIST
+    return COLOR_NONE
   }
 
   const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
@@ -84,7 +97,6 @@ export function WorldMap({ records, onCountryChosen }: WorldMapProps) {
             {({ geographies }) =>
               geographies.map((geo) => {
                 const id = String(geo.id)
-                const entry = records[id]
                 return (
                   <Geography
                     key={geo.rsmKey}
@@ -100,7 +112,8 @@ export function WorldMap({ records, onCountryChosen }: WorldMapProps) {
                         outline: 'none',
                       },
                       hover: {
-                        fill: entry?.status === 'visited' ? '#4fce88' : entry?.status === 'wishlist' ? '#f2c25f' : '#5b6280',
+                        fill: statusFill(id),
+                        opacity: 0.8,
                         stroke: '#1b1e29',
                         strokeWidth: 0.5,
                         outline: 'none',

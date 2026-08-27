@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { WorldMap } from './components/WorldMap'
 import { CountryModal } from './components/CountryModal'
 import { Sidebar } from './components/Sidebar'
-import { useCountryData } from './hooks/useCountryData'
+import { PersonSelector } from './components/PersonSelector'
+import { usePerson } from './hooks/usePerson'
+import { useSharedData } from './hooks/useSharedData'
 import './App.css'
 
 interface Selected {
@@ -11,20 +13,27 @@ interface Selected {
 }
 
 function App() {
-  const { records, markVisited, markWishlist, clearCountry, reorderWishlist } = useCountryData()
+  const { person, setPerson } = usePerson()
+  const { visits, wishlists, setVisited, addToWishlist, removeFromWishlist, reorderWishlist } = useSharedData()
   const [selected, setSelected] = useState<Selected | null>(null)
 
   const stats = useMemo(() => {
-    const values = Object.values(records)
+    const values = Object.values(visits).filter((v) => v.juliana || v.isa)
     return {
-      visited: values.filter((e) => e.status === 'visited').length,
-      wishlist: values.filter((e) => e.status === 'wishlist').length,
+      together: values.filter((v) => v.juliana && v.isa).length,
+      total: values.length,
     }
-  }, [records])
+  }, [visits])
+
+  if (!person) {
+    return <PersonSelector onSelect={setPerson} />
+  }
 
   function handleSelectFromSidebar(id: string) {
-    const entry = records[id]
-    if (entry) setSelected({ id, name: entry.name })
+    const visit = visits[id]
+    const wishlistEntry = wishlists[person!][id] ?? wishlists.shared[id]
+    const name = visit?.countryName ?? wishlistEntry?.countryName
+    if (name) setSelected({ id, name })
   }
 
   return (
@@ -32,32 +41,46 @@ function App() {
       <header className="app-header">
         <h1>Mundo Delas</h1>
         <p className="app-subtitle">
-          Clique nos países para explorar o mapa. {stats.visited} visitados · {stats.wishlist} na lista de desejos.
+          {stats.total} países marcados · {stats.together} visitados juntas
         </p>
       </header>
 
       <main className="app-main">
-        <WorldMap records={records} onCountryChosen={(id, name) => setSelected({ id, name })} />
-        <Sidebar records={records} onReorderWishlist={reorderWishlist} onSelectCountry={handleSelectFromSidebar} />
+        <WorldMap
+          person={person}
+          visits={visits}
+          wishlists={wishlists}
+          onCountryChosen={(id, name) => setSelected({ id, name })}
+        />
+        <Sidebar
+          person={person}
+          visits={visits}
+          myWishlist={wishlists[person]}
+          sharedWishlist={wishlists.shared}
+          onReorderWishlist={reorderWishlist}
+          onSelectCountry={handleSelectFromSidebar}
+        />
       </main>
 
       {selected && (
         <CountryModal
           countryId={selected.id}
           countryName={selected.name}
-          entry={records[selected.id]}
-          onVisited={() => {
-            markVisited(selected.id, selected.name)
-            setSelected(null)
-          }}
-          onWishlist={() => {
-            markWishlist(selected.id, selected.name)
-            setSelected(null)
-          }}
-          onClear={() => {
-            clearCountry(selected.id)
-            setSelected(null)
-          }}
+          person={person}
+          visit={visits[selected.id]}
+          myWishlist={wishlists[person]}
+          sharedWishlist={wishlists.shared}
+          onSetVisited={(visited) => setVisited(selected.id, selected.name, person, visited)}
+          onToggleMyWishlist={() =>
+            wishlists[person][selected.id]
+              ? removeFromWishlist(person, selected.id)
+              : addToWishlist(person, selected.id, selected.name)
+          }
+          onToggleSharedWishlist={() =>
+            wishlists.shared[selected.id]
+              ? removeFromWishlist('shared', selected.id)
+              : addToWishlist('shared', selected.id, selected.name)
+          }
           onClose={() => setSelected(null)}
         />
       )}

@@ -1,16 +1,43 @@
-import type { CountryEntry } from '../types'
+import julianaAvatar from '../assets/avatars/juliana.jpeg'
+import isaAvatar from '../assets/avatars/isa.jpeg'
+import togetherAvatar from '../assets/avatars/together.jpeg'
+import type { Person, VisitEntry, WishlistRecord } from '../types'
+
+const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
+const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
 interface CountryModalProps {
-  countryId: string
   countryName: string
-  entry?: CountryEntry
-  onVisited: () => void
-  onWishlist: () => void
-  onClear: () => void
+  person: Person
+  visit?: VisitEntry
+  myWishlist: WishlistRecord
+  sharedWishlist: WishlistRecord
+  countryId: string
+  onSetVisited: (visited: boolean) => void
+  onToggleMyWishlist: () => void
+  onToggleSharedWishlist: () => void
   onClose: () => void
 }
 
-export function CountryModal({ countryName, entry, onVisited, onWishlist, onClear, onClose }: CountryModalProps) {
+export function CountryModal({
+  countryName,
+  countryId,
+  person,
+  visit,
+  myWishlist,
+  sharedWishlist,
+  onSetVisited,
+  onToggleMyWishlist,
+  onToggleSharedWishlist,
+  onClose,
+}: CountryModalProps) {
+  const other: Person = person === 'juliana' ? 'isa' : 'juliana'
+  const iVisited = Boolean(visit?.[person])
+  const otherVisited = Boolean(visit?.[other])
+  const together = iVisited && otherVisited
+  const inMyWishlist = Boolean(myWishlist[countryId])
+  const inSharedWishlist = Boolean(sharedWishlist[countryId])
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -19,50 +46,43 @@ export function CountryModal({ countryName, entry, onVisited, onWishlist, onClea
         </button>
         <h2>{countryName}</h2>
 
-        {!entry && (
-          <>
-            <p>Você já visitou este país?</p>
-            <div className="modal-actions">
-              <button type="button" className="btn btn-visited" onClick={onVisited}>
-                Já visitei
-              </button>
-              <button type="button" className="btn btn-wishlist" onClick={onWishlist}>
-                Ainda não — quero visitar
-              </button>
-            </div>
-          </>
+        {together && (
+          <div className="together-banner">
+            <img src={togetherAvatar} alt="Vocês duas" />
+            <span>Visitaram juntas! 🎉</span>
+          </div>
         )}
 
-        {entry?.status === 'visited' && (
-          <>
-            <p className="modal-status modal-status-visited">✓ Marcado como visitado</p>
-            <div className="modal-actions">
-              <button type="button" className="btn btn-wishlist" onClick={onWishlist}>
-                Mover para lista de desejos
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={onClear}>
-                Remover marcação
-              </button>
-            </div>
-          </>
-        )}
+        <div className="visit-row">
+          <img className="avatar-sm" src={PERSON_AVATAR[person]} alt={PERSON_LABEL[person]} />
+          <span>Você ({PERSON_LABEL[person]})</span>
+          <button
+            type="button"
+            className={iVisited ? 'btn btn-visited' : 'btn btn-ghost'}
+            onClick={() => onSetVisited(!iVisited)}
+          >
+            {iVisited ? '✓ Já visitei' : 'Marcar como visitado'}
+          </button>
+        </div>
 
-        {entry?.status === 'wishlist' && (
-          <>
-            <p className="modal-status modal-status-wishlist">
-              ★ Na lista de desejos {entry.rank ? `— posição #${entry.rank}` : ''}
-            </p>
-            <p className="modal-hint">Ajuste o ranking na barra lateral, arrastando os países.</p>
-            <div className="modal-actions">
-              <button type="button" className="btn btn-visited" onClick={onVisited}>
-                Já visitei
-              </button>
-              <button type="button" className="btn btn-ghost" onClick={onClear}>
-                Remover marcação
-              </button>
-            </div>
-          </>
-        )}
+        <div className="visit-row">
+          <img className="avatar-sm" src={PERSON_AVATAR[other]} alt={PERSON_LABEL[other]} />
+          <span>{PERSON_LABEL[other]}</span>
+          <span className="visit-status">{otherVisited ? '✓ já visitou' : 'ainda não visitou'}</span>
+        </div>
+
+        <div className="wishlist-section">
+          <button type="button" className={inMyWishlist ? 'btn btn-wishlist' : 'btn btn-ghost'} onClick={onToggleMyWishlist}>
+            {inMyWishlist ? '★ Na minha lista de desejos' : 'Adicionar à minha lista de desejos'}
+          </button>
+          <button
+            type="button"
+            className={inSharedWishlist ? 'btn btn-wishlist' : 'btn btn-ghost'}
+            onClick={onToggleSharedWishlist}
+          >
+            {inSharedWishlist ? '★ Na lista compartilhada' : 'Adicionar à lista compartilhada'}
+          </button>
+        </div>
       </div>
     </div>
   )
