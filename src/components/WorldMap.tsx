@@ -15,6 +15,12 @@ const MAX_ZOOM = 16
 const ZOOM_STEP = 2.6
 const MODAL_ZOOM_TRIGGER = 10
 const AVATAR_BASE_SIZE = 11
+// Keep in sync with the transition duration on .rsm-zoomable-group in App.css.
+// While the map is still animating to its new position, the underlying SVG
+// geometry has already jumped there — a click during that window would hit
+// whatever is at the (still-moving) pixel today, not what the eye sees, so we
+// briefly ignore clicks instead of letting them land on the wrong country.
+const TRANSITION_MS = 280
 
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
@@ -36,6 +42,13 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  function animateTo(next: Position) {
+    setPosition(next)
+    setIsAnimating(true)
+    window.setTimeout(() => setIsAnimating(false), TRANSITION_MS)
+  }
 
   // A mark made on a state or city bubbles up here so the whole country lights up too.
   const countryStatus = useMemo(
@@ -44,6 +57,7 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   )
 
   function handleCountryClick(geo: { id: string; properties: { name: string } }) {
+    if (isAnimating) return
     const id = String(geo.id)
     const name = geo.properties.name
 
@@ -56,11 +70,12 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
     const centroid = geoCentroid(geo as never)
     const nextZoom = Math.min(position.zoom * ZOOM_STEP, MAX_ZOOM)
     setFocusedId(id)
-    setPosition({ coordinates: centroid as [number, number], zoom: nextZoom })
+    animateTo({ coordinates: centroid as [number, number], zoom: nextZoom })
   }
 
   function handleReset() {
-    setPosition(DEFAULT_POSITION)
+    if (isAnimating) return
+    animateTo(DEFAULT_POSITION)
     setFocusedId(null)
   }
 
@@ -79,7 +94,7 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   const avatarSize = AVATAR_BASE_SIZE / position.zoom
 
   return (
-    <div className="map-wrap">
+    <div className={isAnimating ? 'map-wrap map-wrap-animating' : 'map-wrap'}>
       <div className="map-toolbar">
         <button type="button" onClick={handleReset} disabled={position.zoom === MIN_ZOOM}>
           Ver mundo inteiro

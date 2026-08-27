@@ -2,6 +2,7 @@ import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
 import type { Level, Person, VisitEntry, WishlistRecord } from '../types'
+import { PERSON_COLOR, wishlistColor } from '../lib/colors'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
@@ -19,6 +20,35 @@ interface EntityModalProps {
   onToggleMyWishlist: () => void
   onToggleSharedWishlist: () => void
   onClose: () => void
+}
+
+interface StatusToggleProps {
+  active: boolean
+  color: string
+  activeLabel: string
+  inactiveLabel: string
+  onActivate: () => void
+  onClear: () => void
+}
+
+function StatusToggle({ active, color, activeLabel, inactiveLabel, onActivate, onClear }: StatusToggleProps) {
+  if (!active) {
+    return (
+      <button type="button" className="btn btn-ghost" onClick={onActivate}>
+        {inactiveLabel}
+      </button>
+    )
+  }
+  return (
+    <div className="status-toggle">
+      <span className="status-pill" style={{ background: color }}>
+        {activeLabel}
+      </span>
+      <button type="button" className="btn-unmark" onClick={onClear}>
+        Desmarcar
+      </button>
+    </div>
+  )
 }
 
 export function CountryModal({
@@ -61,32 +91,47 @@ export function CountryModal({
         <div className="visit-row">
           <img className="avatar-sm" src={PERSON_AVATAR[person]} alt={PERSON_LABEL[person]} />
           <span>Você ({PERSON_LABEL[person]})</span>
-          <button
-            type="button"
-            className={iVisited ? 'btn btn-visited' : 'btn btn-ghost'}
-            onClick={() => onSetVisited(!iVisited)}
-          >
-            {iVisited ? '✓ Já visitei' : 'Marcar como visitado'}
-          </button>
+          <StatusToggle
+            active={iVisited}
+            color={PERSON_COLOR[person]}
+            activeLabel="✓ Já visitei"
+            inactiveLabel="Marcar como visitado"
+            onActivate={() => onSetVisited(true)}
+            onClear={() => onSetVisited(false)}
+          />
         </div>
 
         <div className="visit-row">
           <img className="avatar-sm" src={PERSON_AVATAR[other]} alt={PERSON_LABEL[other]} />
           <span>{PERSON_LABEL[other]}</span>
-          <span className="visit-status">{otherVisited ? '✓ já visitou' : 'ainda não visitou'}</span>
+          <span className="visit-status">
+            {otherVisited ? (
+              <>
+                <span className="color-dot" style={{ background: PERSON_COLOR[other] }} /> já visitou
+              </>
+            ) : (
+              'ainda não visitou'
+            )}
+          </span>
         </div>
 
         <div className="wishlist-section">
-          <button type="button" className={inMyWishlist ? 'btn btn-wishlist' : 'btn btn-ghost'} onClick={onToggleMyWishlist}>
-            {inMyWishlist ? '★ Na minha lista de desejos' : 'Adicionar à minha lista de desejos'}
-          </button>
-          <button
-            type="button"
-            className={inSharedWishlist ? 'btn btn-wishlist' : 'btn btn-ghost'}
-            onClick={onToggleSharedWishlist}
-          >
-            {inSharedWishlist ? '★ Na lista compartilhada' : 'Adicionar à lista compartilhada'}
-          </button>
+          <StatusToggle
+            active={inMyWishlist}
+            color={wishlistColor(person)}
+            activeLabel="★ Na minha lista de desejos"
+            inactiveLabel="Adicionar à minha lista de desejos"
+            onActivate={onToggleMyWishlist}
+            onClear={onToggleMyWishlist}
+          />
+          <StatusToggle
+            active={inSharedWishlist}
+            color={wishlistColor('shared')}
+            activeLabel="★ Na lista compartilhada"
+            inactiveLabel="Adicionar à lista compartilhada"
+            onActivate={onToggleSharedWishlist}
+            onClear={onToggleSharedWishlist}
+          />
         </div>
       </div>
     </div>

@@ -123,8 +123,15 @@ body {
 /* react-simple-maps snaps center/zoom changes instantly by default; animate
    the underlying group so clicking to zoom in feels smooth instead of a jump cut. */
 .map-wrap .rsm-zoomable-group {
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
+}
+
+/* While that transition plays, the SVG geometry has already jumped to its
+   target — block interaction so a click can't land on the wrong country
+   mid-animation (that was the cause of "have to click twice"). */
+.map-wrap-animating .rsm-zoomable-group {
+  pointer-events: none;
 }
 
 
@@ -329,15 +336,6 @@ body {
   font-weight: 600;
 }
 
-.btn-visited {
-  background: var(--accent-visited);
-  color: #ffffff;
-}
-
-.btn-wishlist {
-  background: var(--accent-wishlist);
-}
-
 .btn-ghost {
   background: transparent;
   border: 1px solid var(--border);
@@ -424,6 +422,47 @@ body {
   margin-left: auto;
   padding: 0.4rem 0.7rem;
   font-size: 0.8rem;
+}
+
+.visit-row .status-toggle {
+  margin-left: auto;
+}
+
+.status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-pill {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.btn-unmark {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-unmark:hover {
+  border-color: #d64550;
+  color: #d64550;
+  background: rgba(214, 69, 80, 0.08);
+}
+
+.wishlist-section .status-toggle {
+  justify-content: space-between;
 }
 
 .avatar-sm {
