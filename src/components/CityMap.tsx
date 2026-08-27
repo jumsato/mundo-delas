@@ -5,6 +5,12 @@ import type { Feature } from 'geojson'
 import type { CityEntry, Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { MapAvatar } from './MapAvatar'
+import julianaAvatar from '../assets/avatars/juliana.jpeg'
+import isaAvatar from '../assets/avatars/isa.jpeg'
+import togetherAvatar from '../assets/avatars/together.jpeg'
+
+const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
 interface CityMapProps {
   countryId: string
@@ -82,18 +88,37 @@ export function CityMap({ countryId, stateId, stateFeature, person, visits, wish
             pressed: { fill: COLOR_NONE, outline: 'none' },
           }}
         />
-        {cities.map((city) => (
-          <Marker
-            key={city.id}
-            coordinates={[city.lon, city.lat]}
-            onClick={() => onCityChosen(city)}
-            onMouseEnter={() => setHoveredName(city.name)}
-            onMouseLeave={() => setHoveredName(null)}
-            style={{ default: { cursor: 'pointer' } }}
-          >
-            <circle r={5} fill={statusFill(city.id)} stroke="#ffffff" strokeWidth={1.5} />
-          </Marker>
-        ))}
+        {cities.map((city) => {
+          const visit = visits[`city:${city.id}`]
+          const visited = visit?.juliana || visit?.isa
+          if (visited) {
+            const src = visit?.juliana && visit?.isa ? togetherAvatar : PERSON_AVATAR[visit?.juliana ? 'juliana' : 'isa']
+            return (
+              <MapAvatar
+                key={city.id}
+                id={`city-${city.id}`}
+                coordinates={[city.lon, city.lat]}
+                src={src}
+                size={9}
+                onClick={() => onCityChosen(city)}
+                onMouseEnter={() => setHoveredName(city.name)}
+                onMouseLeave={() => setHoveredName(null)}
+              />
+            )
+          }
+          return (
+            <Marker
+              key={city.id}
+              coordinates={[city.lon, city.lat]}
+              onClick={() => onCityChosen(city)}
+              onMouseEnter={() => setHoveredName(city.name)}
+              onMouseLeave={() => setHoveredName(null)}
+              style={{ default: { cursor: 'pointer' } }}
+            >
+              <circle r={5} fill={statusFill(city.id)} stroke="#ffffff" strokeWidth={1.5} />
+            </Marker>
+          )
+        })}
       </ComposableMap>
     </div>
   )

@@ -4,11 +4,18 @@ import { geoCentroid } from 'd3-geo'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import worldTopoJson from '../data/world-110m.json'
 import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { MapAvatar } from './MapAvatar'
+import julianaAvatar from '../assets/avatars/juliana.jpeg'
+import isaAvatar from '../assets/avatars/isa.jpeg'
+import togetherAvatar from '../assets/avatars/together.jpeg'
 
 const MIN_ZOOM = 1
 const MAX_ZOOM = 16
 const ZOOM_STEP = 2.6
 const MODAL_ZOOM_TRIGGER = 10
+const AVATAR_BASE_SIZE = 9
+
+const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
 interface Position {
   coordinates: [number, number]
@@ -62,6 +69,9 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
   }
 
   const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
+  const avatarSize = AVATAR_BASE_SIZE / position.zoom
+
+  const countryVisits = Object.values(visits).filter((v) => v.level === 'country' && (v.juliana || v.isa))
 
   return (
     <div className="map-wrap">
@@ -88,40 +98,54 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
           maxZoom={MAX_ZOOM}
         >
           <Geographies geography={worldTopoJson}>
-            {({ geographies }) =>
-              geographies.map((geo) => {
-                const id = String(geo.id)
-                return (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    onClick={() => handleCountryClick(geo)}
-                    onMouseEnter={() => setHoveredName(geo.properties.name)}
-                    onMouseLeave={() => setHoveredName(null)}
-                    style={{
-                      default: {
-                        fill: statusFill(id),
-                        stroke: MAP_STROKE,
-                        strokeWidth: 0.4,
-                        outline: 'none',
-                      },
-                      hover: {
-                        fill: statusFill(id),
-                        opacity: 0.8,
-                        stroke: MAP_STROKE,
-                        strokeWidth: 0.5,
-                        outline: 'none',
-                        cursor: 'pointer',
-                      },
-                      pressed: {
-                        fill: '#6c74a0',
-                        outline: 'none',
-                      },
-                    }}
-                  />
-                )
-              })
-            }
+            {({ geographies }) => {
+              const centroidById = new Map<string, [number, number]>()
+              for (const geo of geographies) {
+                centroidById.set(String(geo.id), geoCentroid(geo as never) as [number, number])
+              }
+              return (
+                <>
+                  {geographies.map((geo) => {
+                    const id = String(geo.id)
+                    return (
+                      <Geography
+                        key={geo.rsmKey}
+                        geography={geo}
+                        onClick={() => handleCountryClick(geo)}
+                        onMouseEnter={() => setHoveredName(geo.properties.name)}
+                        onMouseLeave={() => setHoveredName(null)}
+                        style={{
+                          default: {
+                            fill: statusFill(id),
+                            stroke: MAP_STROKE,
+                            strokeWidth: 0.4,
+                            outline: 'none',
+                          },
+                          hover: {
+                            fill: statusFill(id),
+                            opacity: 0.8,
+                            stroke: MAP_STROKE,
+                            strokeWidth: 0.5,
+                            outline: 'none',
+                            cursor: 'pointer',
+                          },
+                          pressed: {
+                            fill: '#6c74a0',
+                            outline: 'none',
+                          },
+                        }}
+                      />
+                    )
+                  })}
+                  {countryVisits.map((v) => {
+                    const coords = centroidById.get(v.id)
+                    if (!coords) return null
+                    const src = v.juliana && v.isa ? togetherAvatar : PERSON_AVATAR[v.juliana ? 'juliana' : 'isa']
+                    return <MapAvatar key={v.id} id={`country-${v.id}`} coordinates={coords} src={src} size={avatarSize} />
+                  })}
+                </>
+              )
+            }}
           </Geographies>
         </ZoomableGroup>
       </ComposableMap>

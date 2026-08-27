@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import type { ProjectionFunction } from 'react-simple-maps'
+import { geoCentroid } from 'd3-geo'
 import type { Feature, FeatureCollection } from 'geojson'
 import type { Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, COLOR_TOGETHER, COLOR_WISHLIST, MAP_STROKE, PERSON_COLOR } from '../lib/colors'
+import { MapAvatar } from './MapAvatar'
+import julianaAvatar from '../assets/avatars/juliana.jpeg'
+import isaAvatar from '../assets/avatars/isa.jpeg'
+import togetherAvatar from '../assets/avatars/together.jpeg'
+
+const AVATAR_SIZE = 10
+const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
 
 interface StateFeature extends Feature {
   properties: { id: string; name: string }
@@ -37,6 +45,11 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
 
   const projection = useMemo(() => (data ? fitProjection(data) : null), [data])
 
+  const stateVisits = useMemo(
+    () => Object.values(visits).filter((v) => v.level === 'state' && (v.juliana || v.isa)),
+    [visits],
+  )
+
   function statusFill(id: string) {
     const key = `state:${id}`
     const visit = visits[key]
@@ -68,34 +81,48 @@ export function StateMap({ countryId, person, visits, wishlists, onStateChosen }
         style={{ width: '100%', height: '100%' }}
       >
         <Geographies geography={data}>
-          {({ geographies }) =>
-            geographies.map((geo) => (
-              <Geography
-                key={geo.properties.id}
-                geography={geo}
-                onClick={() => onStateChosen(geo as StateFeature)}
-                onMouseEnter={() => setHoveredName(geo.properties.name)}
-                onMouseLeave={() => setHoveredName(null)}
-                style={{
-                  default: {
-                    fill: statusFill(geo.properties.id),
-                    stroke: MAP_STROKE,
-                    strokeWidth: 0.6,
-                    outline: 'none',
-                  },
-                  hover: {
-                    fill: statusFill(geo.properties.id),
-                    opacity: 0.8,
-                    stroke: MAP_STROKE,
-                    strokeWidth: 0.8,
-                    outline: 'none',
-                    cursor: 'pointer',
-                  },
-                  pressed: { fill: '#6c74a0', outline: 'none' },
-                }}
-              />
-            ))
-          }
+          {({ geographies }) => {
+            const centroidById = new Map<string, [number, number]>()
+            for (const geo of geographies) {
+              centroidById.set(geo.properties.id, geoCentroid(geo as never) as [number, number])
+            }
+            return (
+              <>
+                {geographies.map((geo) => (
+                  <Geography
+                    key={geo.properties.id}
+                    geography={geo}
+                    onClick={() => onStateChosen(geo as StateFeature)}
+                    onMouseEnter={() => setHoveredName(geo.properties.name)}
+                    onMouseLeave={() => setHoveredName(null)}
+                    style={{
+                      default: {
+                        fill: statusFill(geo.properties.id),
+                        stroke: MAP_STROKE,
+                        strokeWidth: 0.6,
+                        outline: 'none',
+                      },
+                      hover: {
+                        fill: statusFill(geo.properties.id),
+                        opacity: 0.8,
+                        stroke: MAP_STROKE,
+                        strokeWidth: 0.8,
+                        outline: 'none',
+                        cursor: 'pointer',
+                      },
+                      pressed: { fill: '#6c74a0', outline: 'none' },
+                    }}
+                  />
+                ))}
+                {stateVisits.map((v) => {
+                  const coords = centroidById.get(v.id)
+                  if (!coords) return null
+                  const src = v.juliana && v.isa ? togetherAvatar : PERSON_AVATAR[v.juliana ? 'juliana' : 'isa']
+                  return <MapAvatar key={v.id} id={`state-${v.id}`} coordinates={coords} src={src} size={AVATAR_SIZE} />
+                })}
+              </>
+            )
+          }}
         </Geographies>
       </ComposableMap>
     </div>
