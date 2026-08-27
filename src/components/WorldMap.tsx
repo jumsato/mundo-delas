@@ -1,0 +1,123 @@
+import { useState } from 'react'
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps'
+import { geoCentroid } from 'd3-geo'
+import type { CountryRecord } from '../types'
+import worldTopoJson from '../data/world-110m.json'
+
+const MIN_ZOOM = 1
+const MAX_ZOOM = 16
+const ZOOM_STEP = 2.6
+const MODAL_ZOOM_TRIGGER = 10
+
+interface Position {
+  coordinates: [number, number]
+  zoom: number
+}
+
+const DEFAULT_POSITION: Position = { coordinates: [0, 15], zoom: MIN_ZOOM }
+
+interface WorldMapProps {
+  records: CountryRecord
+  onCountryChosen: (id: string, name: string) => void
+}
+
+export function WorldMap({ records, onCountryChosen }: WorldMapProps) {
+  const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const [hoveredName, setHoveredName] = useState<string | null>(null)
+
+  function handleCountryClick(geo: { id: string; properties: { name: string } }) {
+    const id = String(geo.id)
+    const name = geo.properties.name
+
+    const readyForModal = position.zoom >= MODAL_ZOOM_TRIGGER && focusedId === id
+    if (readyForModal) {
+      onCountryChosen(id, name)
+      return
+    }
+
+    const centroid = geoCentroid(geo as never)
+    const nextZoom = Math.min(position.zoom * ZOOM_STEP, MAX_ZOOM)
+    setFocusedId(id)
+    setPosition({ coordinates: centroid as [number, number], zoom: nextZoom })
+  }
+
+  function handleReset() {
+    setPosition(DEFAULT_POSITION)
+    setFocusedId(null)
+  }
+
+  function statusFill(id: string) {
+    const entry = records[String(id)]
+    if (!entry) return '#3a3f52'
+    if (entry.status === 'visited') return '#3aa66b'
+    return '#e0a93c'
+  }
+
+  const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
+
+  return (
+    <div className="map-wrap">
+      <div className="map-toolbar">
+        <button type="button" onClick={handleReset} disabled={position.zoom === MIN_ZOOM}>
+          Ver mundo inteiro
+        </button>
+        <span className="map-hint">
+          {hoveredName
+            ? closeToModal && focusedId
+              ? `Clique novamente em ${hoveredName} para marcar`
+              : hoveredName
+            : 'Clique em um país para ampliar'}
+        </span>
+      </div>
+      <ComposableMap
+        projectionConfig={{ scale: 147 }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <ZoomableGroup
+          center={position.coordinates}
+          zoom={position.zoom}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
+        >
+          <Geographies geography={worldTopoJson}>
+            {({ geographies }) =>
+              geographies.map((geo) => {
+                const id = String(geo.id)
+                const entry = records[id]
+                return (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    onClick={() => handleCountryClick(geo)}
+                    onMouseEnter={() => setHoveredName(geo.properties.name)}
+                    onMouseLeave={() => setHoveredName(null)}
+                    style={{
+                      default: {
+                        fill: statusFill(id),
+                        stroke: '#1b1e29',
+                        strokeWidth: 0.4,
+                        outline: 'none',
+                      },
+                      hover: {
+                        fill: entry?.status === 'visited' ? '#4fce88' : entry?.status === 'wishlist' ? '#f2c25f' : '#5b6280',
+                        stroke: '#1b1e29',
+                        strokeWidth: 0.5,
+                        outline: 'none',
+                        cursor: 'pointer',
+                      },
+                      pressed: {
+                        fill: '#6c74a0',
+                        outline: 'none',
+                      },
+                    }}
+                  />
+                )
+              })
+            }
+          </Geographies>
+        </ZoomableGroup>
+      </ComposableMap>
+    </div>
+  )
+}
