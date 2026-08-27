@@ -1,17 +1,15 @@
 import { useMemo } from 'react'
-import type { Person, VisitRecord } from '../types'
+import type { Level, Person, VisitRecord } from '../types'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { regionForCountry } from '../lib/countryRegion'
 import { PERSON_COLOR, COLOR_TOGETHER } from '../lib/colors'
 import countryNames from '../data/country-names.json'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
-const TOTAL_COUNTRIES = countryNames.length
-
-const ALL_REGIONS = new Set(
+const LEVEL_LABEL: Record<Level, string> = { country: 'países', state: 'estados', city: 'cidades' }
+const TOTAL_CONTINENTS = new Set(
   countryNames.map((c) => regionForCountry(c.id)?.region).filter((r): r is string => Boolean(r)),
-)
-const TOTAL_CONTINENTS = ALL_REGIONS.size
+).size
 
 interface StatsPanelProps {
   person: Person
@@ -19,39 +17,59 @@ interface StatsPanelProps {
   onClose: () => void
 }
 
-function regionsVisitedBy(countryIds: string[]): Set<string> {
-  const regions = new Set<string>()
-  for (const id of countryIds) {
-    const region = regionForCountry(id)?.region
-    if (region) regions.add(region)
+function byLevelCounts(places: VisitRecord[string][]): Record<Level, number> {
+  return {
+    country: places.filter((p) => p.level === 'country').length,
+    state: places.filter((p) => p.level === 'state').length,
+    city: places.filter((p) => p.level === 'city').length,
   }
-  return regions
 }
 
 export function StatsPanel({ person, visits, onClose }: StatsPanelProps) {
   const other: Person = person === 'juliana' ? 'isa' : 'juliana'
 
-  const { julianaIds, isaIds, togetherCount } = useMemo(() => {
-    const countryStatus = aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId))
-    const julianaIds: string[] = []
-    const isaIds: string[] = []
-    let togetherCount = 0
-    for (const [id, status] of countryStatus.entries()) {
-      if (status.juliana) julianaIds.push(id)
-      if (status.isa) isaIds.push(id)
-      if (status.juliana && status.isa) togetherCount += 1
+  const { placesByPerson, togetherPlaces, continentsByPerson } = useMemo(() => {
+    const all = Object.values(visits)
+    const placesByPerson: Record<Person, VisitRecord[string][]> = {
+      juliana: all.filter((v) => v.juliana),
+      isa: all.filter((v) => v.isa),
     }
-    return { julianaIds, isaIds, togetherCount }
+    const togetherPlaces = all.filter((v) => v.juliana && v.isa).length
+
+    // Continents only make sense at country granularity, so bubble city/state
+    // marks up to their country first.
+    const countryStatus = aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId))
+    const continentsByPerson: Record<Person, number> = { juliana: 0, isa: 0 }
+    for (const person of ['juliana', 'isa'] as Person[]) {
+      const regions = new Set<string>()
+      for (const [id, status] of countryStatus.entries()) {
+        if (status[person]) {
+          const region = regionForCountry(id)?.region
+          if (region) regions.add(region)
+        }
+      }
+      continentsByPerson[person] = regions.size
+    }
+
+    return { placesByPerson, togetherPlaces, continentsByPerson }
   }, [visits])
 
-  const byPerson: Record<Person, string[]> = { juliana: julianaIds, isa: isaIds }
-  const myPct = Math.round((byPerson[person].length / TOTAL_COUNTRIES) * 100)
-  const otherPct = Math.round((byPerson[other].length / TOTAL_COUNTRIES) * 100)
-  const myContinents = regionsVisitedBy(byPerson[person]).size
-  const otherContinents = regionsVisitedBy(byPerson[other]).size
+  const myCounts = byLevelCounts(placesByPerson[person])
+  const otherCounts = byLevelCounts(placesByPerson[other])
 
   const leader: Person | 'empate' =
-    byPerson[person].length === byPerson[other].length ? 'empate' : byPerson[person].length > byPerson[other].length ? person : other
+    placesByPerson[person].length === placesByPerson[other].length
+      ? 'empate'
+      : placesByPerson[person].length > placesByPerson[other].length
+        ? person
+        : other
+
+  function breakdownText(counts: Record<Level, number>) {
+    return (['country', 'state', 'city'] as Level[])
+      .filter((level) => counts[level] > 0)
+      .map((level) => `${counts[level]} ${LEVEL_LABEL[level]}`)
+      .join(' · ') || 'nenhum lugar ainda'
+  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -66,29 +84,27 @@ export function StatsPanel({ person, visits, onClose }: StatsPanelProps) {
             <span className="stats-person-name" style={{ color: PERSON_COLOR[person] }}>
               {PERSON_LABEL[person]}
             </span>
-            <span className="stats-value">{byPerson[person].length}</span>
-            <span className="stats-sub">
-              {myPct}% do mundo · {myContinents}/{TOTAL_CONTINENTS} continentes
-            </span>
+            <span className="stats-value">{placesByPerson[person].length}</span>
+            <span className="stats-sub">lugares · {breakdownText(myCounts)}</span>
+            <span className="stats-sub">{continentsByPerson[person]}/{TOTAL_CONTINENTS} continentes</span>
           </div>
           <div className="stats-person">
             <span className="stats-person-name" style={{ color: PERSON_COLOR[other] }}>
               {PERSON_LABEL[other]}
             </span>
-            <span className="stats-value">{byPerson[other].length}</span>
-            <span className="stats-sub">
-              {otherPct}% do mundo · {otherContinents}/{TOTAL_CONTINENTS} continentes
-            </span>
+            <span className="stats-value">{placesByPerson[other].length}</span>
+            <span className="stats-sub">lugares · {breakdownText(otherCounts)}</span>
+            <span className="stats-sub">{continentsByPerson[other]}/{TOTAL_CONTINENTS} continentes</span>
           </div>
         </div>
 
         <div className="stats-together" style={{ borderColor: COLOR_TOGETHER }}>
-          <strong style={{ color: COLOR_TOGETHER }}>{togetherCount}</strong> países visitados juntas
+          <strong style={{ color: COLOR_TOGETHER }}>{togetherPlaces}</strong> lugares visitados juntas
         </div>
 
         <p className="stats-leader">
           {leader === 'empate'
-            ? 'Vocês estão empatadas — corre pro próximo país! 🏁'
+            ? 'Vocês estão empatadas — corre pro próximo lugar! 🏁'
             : `${PERSON_LABEL[leader]} está na frente por enquanto 🏆`}
         </p>
       </div>

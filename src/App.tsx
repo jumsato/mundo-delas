@@ -12,7 +12,6 @@ import { useSharedData } from './hooks/useSharedData'
 import geoIndex from './data/geo-index.json'
 import type { CityEntry, Level } from './types'
 import type { Feature } from 'geojson'
-import { aggregateVisits } from './lib/aggregateVisits'
 import './App.css'
 
 interface CountryNav {
@@ -50,12 +49,13 @@ function App() {
   const [selected, setSelected] = useState<Selected | null>(null)
   const [showStats, setShowStats] = useState(false)
 
+  // A "lugar" is any marked entry (country, state or city) — a country with
+  // three cities marked in it counts as three places, not one.
   const stats = useMemo(() => {
-    const countryStatus = aggregateVisits(visits, (v) => (v.level === 'country' ? v.id : v.countryId))
-    const statuses = [...countryStatus.values()]
+    const places = Object.values(visits).filter((v) => v.juliana || v.isa)
     return {
-      together: statuses.filter((s) => s.juliana && s.isa).length,
-      total: statuses.length,
+      total: places.length,
+      together: places.filter((v) => v.juliana && v.isa).length,
     }
   }, [visits])
 
@@ -100,7 +100,7 @@ function App() {
           <div>
             <h1>Mundo Delas</h1>
             <p className="app-subtitle">
-              {stats.total} países marcados · {stats.together} visitados juntas
+              {stats.total} lugares marcados · {stats.together} visitados juntas
             </p>
           </div>
           <div className="app-header-actions">
