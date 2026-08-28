@@ -118,7 +118,7 @@ export function WorldMap({
           <CountryInfoTrigger countryId={focusedId} countryName={focusedName} />
           {focusedVisited && (
             <MemoriesTrigger
-              countryName={focusedName}
+              title={focusedName}
               meta={focusedMeta}
               onUpdateMeta={(patch) => onUpdateMeta('country', focusedId, patch)}
               onAddPhoto={(dataUrl) => onAddPhoto('country', focusedId, dataUrl)}

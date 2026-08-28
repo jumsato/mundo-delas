@@ -3,7 +3,6 @@ import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
 import type { Level, Person, VisitEntry, WishlistRecord } from '../types'
 import { PERSON_COLOR, wishlistColor } from '../lib/colors'
-import { VisitMetaEditor } from './VisitMetaEditor'
 
 const PERSON_LABEL: Record<Person, string> = { juliana: 'Juliana', isa: 'Isa' }
 const PERSON_AVATAR: Record<Person, string> = { juliana: julianaAvatar, isa: isaAvatar }
@@ -18,9 +17,6 @@ interface EntityModalProps {
   myWishlist: WishlistRecord
   sharedWishlist: WishlistRecord
   onSetVisited: (visited: boolean) => void
-  onUpdateMeta: (patch: Partial<Record<'date' | 'note', string | null>>) => void
-  onAddPhoto: (dataUrl: string) => void
-  onRemovePhoto: (dataUrl: string) => void
   onToggleMyWishlist: () => void
   onToggleSharedWishlist: () => void
   onClose: () => void
@@ -64,9 +60,6 @@ export function CountryModal({
   myWishlist,
   sharedWishlist,
   onSetVisited,
-  onUpdateMeta,
-  onAddPhoto,
-  onRemovePhoto,
   onToggleMyWishlist,
   onToggleSharedWishlist,
   onClose,
@@ -78,7 +71,6 @@ export function CountryModal({
   const wishlistKey = `${level}:${entityId}`
   const inMyWishlist = Boolean(myWishlist[wishlistKey])
   const inSharedWishlist = Boolean(sharedWishlist[wishlistKey])
-  const myMeta = visit?.meta?.[person] ?? {}
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -109,10 +101,7 @@ export function CountryModal({
           />
         </div>
 
-        {iVisited && level !== 'country' && (
-          <VisitMetaEditor meta={myMeta} onUpdateMeta={onUpdateMeta} onAddPhoto={onAddPhoto} onRemovePhoto={onRemovePhoto} />
-        )}
-        {iVisited && level === 'country' && (
+        {iVisited && (
           <p className="visit-meta-hint">Use o ícone 📷 no mapa para guardar lembranças e fotos dessa viagem.</p>
         )}
 

@@ -3,13 +3,14 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import type { ProjectionFunction } from 'react-simple-maps'
 import { geoCentroid } from 'd3-geo'
 import type { Feature, FeatureCollection } from 'geojson'
-import type { Person, VisitRecord, WishlistsByOwner } from '../types'
+import type { Level, Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
 import { MemoriesTrigger } from './MemoriesTrigger'
+import { MemoriesModal } from './MemoriesModal'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -28,9 +29,9 @@ interface StateMapProps {
   visits: VisitRecord
   wishlists: WishlistsByOwner
   onStateChosen: (feature: StateFeature) => void
-  onUpdateMeta: (level: 'country', id: string, patch: Partial<Record<'date' | 'note', string | null>>) => void
-  onAddPhoto: (level: 'country', id: string, dataUrl: string) => void
-  onRemovePhoto: (level: 'country', id: string, dataUrl: string) => void
+  onUpdateMeta: (level: Level, id: string, patch: Partial<Record<'date' | 'note', string | null>>) => void
+  onAddPhoto: (level: Level, id: string, dataUrl: string) => void
+  onRemovePhoto: (level: Level, id: string, dataUrl: string) => void
 }
 
 export function StateMap({
@@ -47,6 +48,7 @@ export function StateMap({
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
+  const [memoriesForId, setMemoriesForId] = useState<string | null>(null)
 
   useEffect(() => {
     setData(null)
@@ -96,7 +98,7 @@ export function StateMap({
         <CountryInfoTrigger countryId={countryId} countryName={countryName} />
         {countryVisited && (
           <MemoriesTrigger
-            countryName={countryName}
+            title={countryName}
             meta={countryMeta}
             onUpdateMeta={(patch) => onUpdateMeta('country', countryId, patch)}
             onAddPhoto={(dataUrl) => onAddPhoto('country', countryId, dataUrl)}
@@ -151,13 +153,33 @@ export function StateMap({
                   const coords = centroidById.get(id)
                   if (!coords) return null
                   const src = status.juliana && status.isa ? togetherAvatar : PERSON_AVATAR[status.juliana ? 'juliana' : 'isa']
-                  return <MapAvatar key={id} id={`state-${id}`} coordinates={coords} src={src} size={AVATAR_SIZE} />
+                  const mine = Boolean(visits[`state:${id}`]?.[person])
+                  return (
+                    <MapAvatar
+                      key={id}
+                      id={`state-${id}`}
+                      coordinates={coords}
+                      src={src}
+                      size={AVATAR_SIZE}
+                      badge={mine ? { emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(id) } : undefined}
+                    />
+                  )
                 })}
               </>
             )
           }}
         </Geographies>
       </ComposableMap>
+      {memoriesForId && (
+        <MemoriesModal
+          title={visits[`state:${memoriesForId}`]?.name ?? ''}
+          meta={visits[`state:${memoriesForId}`]?.meta?.[person] ?? {}}
+          onUpdateMeta={(patch) => onUpdateMeta('state', memoriesForId, patch)}
+          onAddPhoto={(dataUrl) => onAddPhoto('state', memoriesForId, dataUrl)}
+          onRemovePhoto={(dataUrl) => onRemovePhoto('state', memoriesForId, dataUrl)}
+          onClose={() => setMemoriesForId(null)}
+        />
+      )}
     </div>
   )
 }

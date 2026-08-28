@@ -194,6 +194,9 @@ function App() {
             visits={visits}
             wishlists={wishlists}
             onCityChosen={handleCityChosen}
+            onUpdateMeta={(level, id, patch) => setVisitMeta(level, id, person, patch)}
+            onAddPhoto={(level, id, dataUrl) => addVisitPhoto(level, id, person, dataUrl)}
+            onRemovePhoto={(level, id, dataUrl) => removeVisitPhoto(level, id, person, dataUrl)}
           />
         )}
         <Sidebar
@@ -221,9 +224,6 @@ function App() {
               stateId: selected.stateId,
             })
           }
-          onUpdateMeta={(patch) => setVisitMeta(selected.level, selected.id, person, patch)}
-          onAddPhoto={(dataUrl) => addVisitPhoto(selected.level, selected.id, person, dataUrl)}
-          onRemovePhoto={(dataUrl) => removeVisitPhoto(selected.level, selected.id, person, dataUrl)}
           onToggleMyWishlist={() =>
             wishlists[person][`${selected.level}:${selected.id}`]
               ? removeFromWishlist(person, selected.level, selected.id)

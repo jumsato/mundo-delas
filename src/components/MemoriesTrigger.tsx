@@ -3,14 +3,14 @@ import type { PersonVisitMeta } from '../types'
 import { MemoriesModal } from './MemoriesModal'
 
 interface MemoriesTriggerProps {
-  countryName: string
+  title: string
   meta: PersonVisitMeta
   onUpdateMeta: (patch: Partial<Record<'date' | 'note', string | null>>) => void
   onAddPhoto: (dataUrl: string) => void
   onRemovePhoto: (dataUrl: string) => void
 }
 
-export function MemoriesTrigger({ countryName, meta, onUpdateMeta, onAddPhoto, onRemovePhoto }: MemoriesTriggerProps) {
+export function MemoriesTrigger({ title, meta, onUpdateMeta, onAddPhoto, onRemovePhoto }: MemoriesTriggerProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -19,14 +19,14 @@ export function MemoriesTrigger({ countryName, meta, onUpdateMeta, onAddPhoto, o
         type="button"
         className="map-fab"
         onClick={() => setOpen(true)}
-        title={`Lembranças de ${countryName}`}
-        aria-label={`Lembranças de ${countryName}`}
+        title={`Lembranças de ${title}`}
+        aria-label={`Lembranças de ${title}`}
       >
         📷
       </button>
       {open && (
         <MemoriesModal
-          countryName={countryName}
+          title={title}
           meta={meta}
           onUpdateMeta={onUpdateMeta}
           onAddPhoto={onAddPhoto}

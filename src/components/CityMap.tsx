@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps'
 import type { ProjectionFunction } from 'react-simple-maps'
 import type { Feature } from 'geojson'
-import type { CityEntry, Person, VisitRecord, WishlistsByOwner } from '../types'
+import type { CityEntry, Level, Person, VisitRecord, WishlistsByOwner } from '../types'
 import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, MAP_STROKE, statusFill } from '../lib/colors'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
+import { MemoriesModal } from './MemoriesModal'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -22,12 +23,28 @@ interface CityMapProps {
   visits: VisitRecord
   wishlists: WishlistsByOwner
   onCityChosen: (city: CityEntry) => void
+  onUpdateMeta: (level: Level, id: string, patch: Partial<Record<'date' | 'note', string | null>>) => void
+  onAddPhoto: (level: Level, id: string, dataUrl: string) => void
+  onRemovePhoto: (level: Level, id: string, dataUrl: string) => void
 }
 
-export function CityMap({ countryId, countryName, stateId, stateFeature, person, visits, wishlists, onCityChosen }: CityMapProps) {
+export function CityMap({
+  countryId,
+  countryName,
+  stateId,
+  stateFeature,
+  person,
+  visits,
+  wishlists,
+  onCityChosen,
+  onUpdateMeta,
+  onAddPhoto,
+  onRemovePhoto,
+}: CityMapProps) {
   const [allCities, setAllCities] = useState<CityEntry[] | null>(null)
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
+  const [memoriesForId, setMemoriesForId] = useState<string | null>(null)
 
   useEffect(() => {
     setAllCities(null)
@@ -74,7 +91,9 @@ export function CityMap({ countryId, countryName, stateId, stateFeature, person,
 
   return (
     <div className="map-wrap">
-      <CountryInfoTrigger countryId={countryId} countryName={countryName} />
+      <div className="map-fab-stack">
+        <CountryInfoTrigger countryId={countryId} countryName={countryName} />
+      </div>
       <div className="map-toolbar">
         <span className="map-hint">{hoveredName ?? 'Clique em uma cidade'}</span>
       </div>
@@ -104,6 +123,7 @@ export function CityMap({ countryId, countryName, stateId, stateFeature, person,
           const visited = visit?.juliana || visit?.isa
           if (visited) {
             const src = visit?.juliana && visit?.isa ? togetherAvatar : PERSON_AVATAR[visit?.juliana ? 'juliana' : 'isa']
+            const mine = Boolean(visit?.[person])
             return (
               <MapAvatar
                 key={city.id}
@@ -114,6 +134,7 @@ export function CityMap({ countryId, countryName, stateId, stateFeature, person,
                 onClick={() => onCityChosen(city)}
                 onMouseEnter={() => setHoveredName(city.name)}
                 onMouseLeave={() => setHoveredName(null)}
+                badge={mine ? { emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(city.id) } : undefined}
               />
             )
           }
@@ -131,6 +152,16 @@ export function CityMap({ countryId, countryName, stateId, stateFeature, person,
           )
         })}
       </ComposableMap>
+      {memoriesForId && (
+        <MemoriesModal
+          title={cities.find((c) => c.id === memoriesForId)?.name ?? ''}
+          meta={visits[`city:${memoriesForId}`]?.meta?.[person] ?? {}}
+          onUpdateMeta={(patch) => onUpdateMeta('city', memoriesForId, patch)}
+          onAddPhoto={(dataUrl) => onAddPhoto('city', memoriesForId, dataUrl)}
+          onRemovePhoto={(dataUrl) => onRemovePhoto('city', memoriesForId, dataUrl)}
+          onClose={() => setMemoriesForId(null)}
+        />
+      )}
     </div>
   )
 }
