@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { collection, deleteField, doc, deleteDoc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore'
+import { arrayRemove, arrayUnion, collection, deleteField, doc, deleteDoc, onSnapshot, setDoc, writeBatch } from 'firebase/firestore'
 import { db, ready } from '../firebase'
-import type { Level, Person, PersonVisitMeta, VisitRecord, WishlistOwner, WishlistRecord, WishlistsByOwner } from '../types'
+import type { Level, Person, VisitRecord, WishlistOwner, WishlistRecord, WishlistsByOwner } from '../types'
 
 const EMPTY_WISHLISTS: WishlistsByOwner = { juliana: {}, isa: {}, shared: {} }
 
@@ -67,7 +67,7 @@ export function useSharedData() {
     level: Level,
     id: string,
     person: Person,
-    patch: Partial<Record<keyof PersonVisitMeta, string | null>>,
+    patch: Partial<Record<'date' | 'note', string | null>>,
   ) {
     await ready
     const value: Record<string, unknown> = {}
@@ -75,6 +75,16 @@ export function useSharedData() {
       value[field] = fieldValue === null ? deleteField() : fieldValue
     }
     await setDoc(doc(db, 'visits', key(level, id)), { meta: { [person]: value } }, { merge: true })
+  }
+
+  async function addVisitPhoto(level: Level, id: string, person: Person, photo: string) {
+    await ready
+    await setDoc(doc(db, 'visits', key(level, id)), { meta: { [person]: { photos: arrayUnion(photo) } } }, { merge: true })
+  }
+
+  async function removeVisitPhoto(level: Level, id: string, person: Person, photo: string) {
+    await ready
+    await setDoc(doc(db, 'visits', key(level, id)), { meta: { [person]: { photos: arrayRemove(photo) } } }, { merge: true })
   }
 
   async function addToWishlist(owner: WishlistOwner, level: Level, id: string, name: string) {
@@ -110,5 +120,5 @@ export function useSharedData() {
     await batch.commit()
   }
 
-  return { visits, wishlists, setVisited, setVisitMeta, addToWishlist, removeFromWishlist, reorderWishlist }
+  return { visits, wishlists, setVisited, setVisitMeta, addVisitPhoto, removeVisitPhoto, addToWishlist, removeFromWishlist, reorderWishlist }
 }

@@ -7,6 +7,7 @@ import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
+import { MemoriesTrigger } from './MemoriesTrigger'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -37,9 +38,20 @@ interface WorldMapProps {
   visits: VisitRecord
   wishlists: WishlistsByOwner
   onCountryChosen: (id: string, name: string) => void
+  onUpdateMeta: (level: 'country', id: string, patch: Partial<Record<'date' | 'note', string | null>>) => void
+  onAddPhoto: (level: 'country', id: string, dataUrl: string) => void
+  onRemovePhoto: (level: 'country', id: string, dataUrl: string) => void
 }
 
-export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMapProps) {
+export function WorldMap({
+  person,
+  visits,
+  wishlists,
+  onCountryChosen,
+  onUpdateMeta,
+  onAddPhoto,
+  onRemovePhoto,
+}: WorldMapProps) {
   const [position, setPosition] = useState<Position>(DEFAULT_POSITION)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [focusedName, setFocusedName] = useState<string | null>(null)
@@ -96,10 +108,25 @@ export function WorldMap({ person, visits, wishlists, onCountryChosen }: WorldMa
 
   const closeToModal = position.zoom >= MODAL_ZOOM_TRIGGER
   const avatarSize = AVATAR_BASE_SIZE / position.zoom
+  const focusedVisited = focusedId ? Boolean(visits[`country:${focusedId}`]?.[person]) : false
+  const focusedMeta = focusedId ? (visits[`country:${focusedId}`]?.meta?.[person] ?? {}) : {}
 
   return (
     <div className={isAnimating ? 'map-wrap map-wrap-animating' : 'map-wrap'}>
-      {closeToModal && focusedId && focusedName && <CountryInfoTrigger countryId={focusedId} countryName={focusedName} />}
+      {closeToModal && focusedId && focusedName && (
+        <div className="map-fab-stack">
+          <CountryInfoTrigger countryId={focusedId} countryName={focusedName} />
+          {focusedVisited && (
+            <MemoriesTrigger
+              countryName={focusedName}
+              meta={focusedMeta}
+              onUpdateMeta={(patch) => onUpdateMeta('country', focusedId, patch)}
+              onAddPhoto={(dataUrl) => onAddPhoto('country', focusedId, dataUrl)}
+              onRemovePhoto={(dataUrl) => onRemovePhoto('country', focusedId, dataUrl)}
+            />
+          )}
+        </div>
+      )}
       <div className="map-toolbar">
         <button type="button" onClick={handleReset} disabled={position.zoom === MIN_ZOOM}>
           Ver mundo inteiro

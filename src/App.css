@@ -234,11 +234,17 @@ body {
   font-size: 0.85rem;
 }
 
-.country-info-fab {
+.map-fab-stack {
   position: absolute;
   top: 3.4rem;
   right: 0.75rem;
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.map-fab {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -253,7 +259,7 @@ body {
   transition: transform 0.15s ease;
 }
 
-.country-info-fab:hover {
+.map-fab:hover {
   transform: scale(1.08);
 }
 
@@ -684,22 +690,60 @@ body {
   background: var(--panel);
 }
 
-.visit-photo-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.visit-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.visit-photo-item {
+  position: relative;
 }
 
 .visit-photo-thumb {
-  width: 56px;
-  height: 56px;
+  width: 100%;
+  height: 64px;
   object-fit: cover;
   border-radius: 8px;
+  display: block;
+}
+
+.visit-photo-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #1a1d29;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .visit-meta-error {
   color: #d64550;
   font-size: 0.75rem;
+}
+
+.visit-meta-hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 0 0 0.75rem;
+}
+
+.memories-card {
+  width: 380px;
+}
+
+.memories-card .visit-meta {
+  margin-left: 0;
 }
 
 .country-guide {

@@ -9,6 +9,7 @@ import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
+import { MemoriesTrigger } from './MemoriesTrigger'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
 import togetherAvatar from '../assets/avatars/together.jpeg'
@@ -27,9 +28,22 @@ interface StateMapProps {
   visits: VisitRecord
   wishlists: WishlistsByOwner
   onStateChosen: (feature: StateFeature) => void
+  onUpdateMeta: (level: 'country', id: string, patch: Partial<Record<'date' | 'note', string | null>>) => void
+  onAddPhoto: (level: 'country', id: string, dataUrl: string) => void
+  onRemovePhoto: (level: 'country', id: string, dataUrl: string) => void
 }
 
-export function StateMap({ countryId, countryName, person, visits, wishlists, onStateChosen }: StateMapProps) {
+export function StateMap({
+  countryId,
+  countryName,
+  person,
+  visits,
+  wishlists,
+  onStateChosen,
+  onUpdateMeta,
+  onAddPhoto,
+  onRemovePhoto,
+}: StateMapProps) {
   const [data, setData] = useState<FeatureCollection | null>(null)
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
@@ -73,9 +87,23 @@ export function StateMap({ countryId, countryName, person, visits, wishlists, on
     return <p className="map-inline-message">Carregando estados…</p>
   }
 
+  const countryVisited = Boolean(visits[`country:${countryId}`]?.[person])
+  const countryMeta = visits[`country:${countryId}`]?.meta?.[person] ?? {}
+
   return (
     <div className="map-wrap">
-      <CountryInfoTrigger countryId={countryId} countryName={countryName} />
+      <div className="map-fab-stack">
+        <CountryInfoTrigger countryId={countryId} countryName={countryName} />
+        {countryVisited && (
+          <MemoriesTrigger
+            countryName={countryName}
+            meta={countryMeta}
+            onUpdateMeta={(patch) => onUpdateMeta('country', countryId, patch)}
+            onAddPhoto={(dataUrl) => onAddPhoto('country', countryId, dataUrl)}
+            onRemovePhoto={(dataUrl) => onRemovePhoto('country', countryId, dataUrl)}
+          />
+        )}
+      </div>
       <div className="map-toolbar">
         <span className="map-hint">{hoveredName ?? 'Clique em um estado/província'}</span>
       </div>

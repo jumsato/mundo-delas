@@ -5,7 +5,7 @@ export type Level = 'country' | 'state' | 'city'
 export interface PersonVisitMeta {
   date?: string
   note?: string
-  photo?: string
+  photos?: string[]
 }
 
 export interface VisitEntry {

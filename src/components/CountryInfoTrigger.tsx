@@ -13,7 +13,7 @@ export function CountryInfoTrigger({ countryId, countryName }: CountryInfoTrigge
     <>
       <button
         type="button"
-        className="country-info-fab"
+        className="map-fab"
         onClick={() => setOpen(true)}
         title={`Curiosidades sobre ${countryName}`}
         aria-label={`Curiosidades sobre ${countryName}`}
