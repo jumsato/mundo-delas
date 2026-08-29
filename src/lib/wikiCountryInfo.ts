@@ -21,6 +21,10 @@ interface SummaryResponse {
   type?: string
 }
 
+interface SearchResponse {
+  query?: { search?: { title: string }[] }
+}
+
 async function fetchPortugueseTitle(englishName: string): Promise<string | null> {
   const url = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(englishName)}&prop=langlinks&lllang=pt&format=json&origin=*`
   const res = await fetch(url)
@@ -31,39 +35,70 @@ async function fetchPortugueseTitle(englishName: string): Promise<string | null>
   return page?.langlinks?.[0]?.['*'] ?? null
 }
 
-async function fetchSummary(lang: 'pt' | 'en', title: string): Promise<CountryGuideInfo | null> {
-  const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+const DISAMBIGUATION_TITLE_PATTERN = /\((disambiguation|desambigua[cç][aã]o)\)$/i
+
+// A bare place name (e.g. "Saitama", "Fukushima", "Matsumoto") often lands on
+// a disambiguation page shared with a same-named city/prefecture/person, so
+// we fall back to full-text search to find the actual article — skipping the
+// disambiguation page itself, which search re-surfaces as the top hit for an
+// exact-title query.
+async function searchTitle(lang: 'pt' | 'en', query: string, exclude: string): Promise<string | null> {
+  const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&format=json&origin=*`
   const res = await fetch(url)
   if (!res.ok) return null
-  const data = (await res.json()) as SummaryResponse
-  if (data.type === 'disambiguation' || !data.extract) return null
-  return {
-    title,
-    extract: data.extract,
-    thumbnail: data.thumbnail?.source,
-    pageUrl: data.content_urls?.desktop?.page ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`,
-    lang,
-  }
+  const data = (await res.json()) as SearchResponse
+  const results = data.query?.search ?? []
+  const hit = results.find((r) => r.title !== exclude && !DISAMBIGUATION_TITLE_PATTERN.test(r.title))
+  return hit?.title ?? null
 }
 
-async function loadCountryGuide(englishName: string): Promise<CountryGuideInfo | null> {
+async function fetchSummary(
+  lang: 'pt' | 'en',
+  title: string,
+  hint?: string,
+  allowFallback = true,
+): Promise<CountryGuideInfo | null> {
+  const url = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
+  const res = await fetch(url)
+  if (res.ok) {
+    const data = (await res.json()) as SummaryResponse
+    if (data.type !== 'disambiguation' && data.extract) {
+      return {
+        title,
+        extract: data.extract,
+        thumbnail: data.thumbnail?.source,
+        pageUrl: data.content_urls?.desktop?.page ?? `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title)}`,
+        lang,
+      }
+    }
+  }
+  if (!allowFallback) return null
+  const found = hint
+    ? (await searchTitle(lang, `${title} ${hint}`, title)) ?? (await searchTitle(lang, title, title))
+    : await searchTitle(lang, title, title)
+  if (!found) return null
+  return fetchSummary(lang, found, hint, false)
+}
+
+async function loadCountryGuide(englishName: string, hint?: string): Promise<CountryGuideInfo | null> {
   try {
     const ptTitle = await fetchPortugueseTitle(englishName)
     if (ptTitle) {
-      const ptSummary = await fetchSummary('pt', ptTitle)
+      const ptSummary = await fetchSummary('pt', ptTitle, hint)
       if (ptSummary) return ptSummary
     }
-    return await fetchSummary('en', englishName)
+    return await fetchSummary('en', englishName, hint)
   } catch {
     return null
   }
 }
 
-export function fetchCountryGuide(englishName: string): Promise<CountryGuideInfo | null> {
-  if (!cache.has(englishName)) {
-    cache.set(englishName, loadCountryGuide(englishName))
+export function fetchCountryGuide(englishName: string, hint?: string): Promise<CountryGuideInfo | null> {
+  const cacheKey = hint ? `${englishName}::${hint}` : englishName
+  if (!cache.has(cacheKey)) {
+    cache.set(cacheKey, loadCountryGuide(englishName, hint))
   }
-  return cache.get(englishName)!
+  return cache.get(cacheKey)!
 }
 
 const SKIP_IMAGE_PATTERN = /flag|coat_of_arms|locator|orthographic|\.svg$|map|escudo|bandeira|brasão|logo|icon/i

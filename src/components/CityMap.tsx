@@ -7,6 +7,8 @@ import { fitProjection, MAP_HEIGHT, MAP_WIDTH } from '../lib/fitProjection'
 import { COLOR_NONE, MAP_STROKE, statusFill } from '../lib/colors'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
+import { CountryInfoModal } from './CountryInfoModal'
+import { InfoBadgeMarker } from './InfoBadgeMarker'
 import { MemoriesModal } from './MemoriesModal'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
 import isaAvatar from '../assets/avatars/isa.jpeg'
@@ -45,6 +47,7 @@ export function CityMap({
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
   const [memoriesForId, setMemoriesForId] = useState<string | null>(null)
+  const [infoForId, setInfoForId] = useState<string | null>(null)
 
   useEffect(() => {
     setAllCities(null)
@@ -134,21 +137,31 @@ export function CityMap({
                 onClick={() => onCityChosen(city)}
                 onMouseEnter={() => setHoveredName(city.name)}
                 onMouseLeave={() => setHoveredName(null)}
-                badge={mine ? { emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(city.id) } : undefined}
+                badges={[
+                  { emoji: '💡', title: `Curiosidades sobre ${city.name}`, onClick: () => setInfoForId(city.id) },
+                  ...(mine ? [{ emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(city.id) }] : []),
+                ]}
               />
             )
           }
           return (
-            <Marker
-              key={city.id}
-              coordinates={[city.lon, city.lat]}
-              onClick={() => onCityChosen(city)}
-              onMouseEnter={() => setHoveredName(city.name)}
-              onMouseLeave={() => setHoveredName(null)}
-              style={{ default: { cursor: 'pointer' } }}
-            >
-              <circle r={4} fill={fillFor(city.id)} stroke="#ffffff" strokeWidth={1} />
-            </Marker>
+            <g key={city.id}>
+              <Marker
+                coordinates={[city.lon, city.lat]}
+                onClick={() => onCityChosen(city)}
+                onMouseEnter={() => setHoveredName(city.name)}
+                onMouseLeave={() => setHoveredName(null)}
+                style={{ default: { cursor: 'pointer' } }}
+              >
+                <circle r={4} fill={fillFor(city.id)} stroke="#ffffff" strokeWidth={1} />
+              </Marker>
+              <InfoBadgeMarker
+                coordinates={[city.lon, city.lat]}
+                title={`Curiosidades sobre ${city.name}`}
+                offset={[7, -7]}
+                onClick={() => setInfoForId(city.id)}
+              />
+            </g>
           )
         })}
       </ComposableMap>
@@ -160,6 +173,15 @@ export function CityMap({
           onAddPhoto={(dataUrl) => onAddPhoto('city', memoriesForId, dataUrl)}
           onRemovePhoto={(dataUrl) => onRemovePhoto('city', memoriesForId, dataUrl)}
           onClose={() => setMemoriesForId(null)}
+        />
+      )}
+      {infoForId && (
+        <CountryInfoModal
+          countryId={infoForId}
+          countryName={cities.find((c) => c.id === infoForId)?.name ?? ''}
+          level="city"
+          hint={countryName}
+          onClose={() => setInfoForId(null)}
         />
       )}
     </div>

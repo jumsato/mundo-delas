@@ -14,14 +14,15 @@ interface MapAvatarProps {
   onClick?: () => void
   onMouseEnter?: () => void
   onMouseLeave?: () => void
-  badge?: AvatarBadge
+  badges?: AvatarBadge[]
 }
 
-export function MapAvatar({ id, coordinates, src, size = 9, onClick, onMouseEnter, onMouseLeave, badge }: MapAvatarProps) {
+export function MapAvatar({ id, coordinates, src, size = 9, onClick, onMouseEnter, onMouseLeave, badges }: MapAvatarProps) {
   const clipId = `avatar-clip-${id}`
   const interactive = Boolean(onClick)
   const badgeR = Math.max(size * 0.55, 4)
   const badgeOffset = size * 0.85
+  const badgeStep = badgeR * 2.2
   return (
     <Marker
       coordinates={coordinates}
@@ -43,9 +44,10 @@ export function MapAvatar({ id, coordinates, src, size = 9, onClick, onMouseEnte
         clipPath={`url(#${clipId})`}
         preserveAspectRatio="xMidYMid slice"
       />
-      {badge && (
+      {badges?.map((badge, i) => (
         <g
-          transform={`translate(${badgeOffset}, ${badgeOffset})`}
+          key={badge.emoji}
+          transform={`translate(${badgeOffset + i * badgeStep}, ${badgeOffset})`}
           onClick={(e) => {
             e.stopPropagation()
             badge.onClick()
@@ -58,7 +60,7 @@ export function MapAvatar({ id, coordinates, src, size = 9, onClick, onMouseEnte
             {badge.emoji}
           </text>
         </g>
-      )}
+      ))}
     </Marker>
   )
 }

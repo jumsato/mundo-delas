@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
 import { fetchCountryGuide, fetchCountryPhotos, type CountryGuideInfo } from '../lib/wikiCountryInfo'
 import { estimateTripCost } from '../lib/costTier'
+import type { Level } from '../types'
 
 interface CountryInfoModalProps {
   countryId: string
   countryName: string
+  level?: Level
+  // the country the state/city belongs to — disambiguates a state/city name
+  // that collides with another Wikipedia article (e.g. "Fukushima" the
+  // prefecture vs. the disaster, "Matsumoto" the city vs. the surname).
+  hint?: string
   onClose: () => void
 }
 
 type LoadState = 'loading' | 'ready' | 'error'
 
-export function CountryInfoModal({ countryId, countryName, onClose }: CountryInfoModalProps) {
+export function CountryInfoModal({ countryId, countryName, level = 'country', hint, onClose }: CountryInfoModalProps) {
   const [info, setInfo] = useState<CountryGuideInfo | null>(null)
   const [state, setState] = useState<LoadState>('loading')
   const [photos, setPhotos] = useState<string[]>([])
@@ -20,7 +26,7 @@ export function CountryInfoModal({ countryId, countryName, onClose }: CountryInf
     setState('loading')
     setInfo(null)
     setPhotos([])
-    fetchCountryGuide(countryName).then((result) => {
+    fetchCountryGuide(countryName, hint).then((result) => {
       if (cancelled) return
       setInfo(result)
       setState(result ? 'ready' : 'error')
@@ -33,7 +39,7 @@ export function CountryInfoModal({ countryId, countryName, onClose }: CountryInf
     return () => {
       cancelled = true
     }
-  }, [countryName])
+  }, [countryName, hint])
 
   const cost = estimateTripCost(countryId, countryName)
   const heroPhoto = photos[0] ?? info?.thumbnail
@@ -75,20 +81,22 @@ export function CountryInfoModal({ countryId, countryName, onClose }: CountryInf
             </div>
           )}
 
-          <div className="country-guide-cost">
-            <span className="country-guide-cost-label">Custo estimado · viagem de 15 dias</span>
-            <span className="country-guide-cost-value">
-              US$ {cost.totalUsd15d[0]}–{cost.totalUsd15d[1]} por pessoa
-            </span>
-            <span className="country-guide-cost-tier">
-              Nível de custo: <strong>{cost.tier}</strong> (~US$ {cost.dailyUsd[0]}–{cost.dailyUsd[1]}/dia com
-              hospedagem, comida e transporte local)
-            </span>
-            <span className="country-guide-cost-note">
-              Estimativa aproximada, não inclui passagem aérea internacional — varia bastante conforme o estilo de
-              viagem.
-            </span>
-          </div>
+          {level === 'country' && (
+            <div className="country-guide-cost">
+              <span className="country-guide-cost-label">Custo estimado · viagem de 15 dias</span>
+              <span className="country-guide-cost-value">
+                US$ {cost.totalUsd15d[0]}–{cost.totalUsd15d[1]} por pessoa
+              </span>
+              <span className="country-guide-cost-tier">
+                Nível de custo: <strong>{cost.tier}</strong> (~US$ {cost.dailyUsd[0]}–{cost.dailyUsd[1]}/dia com
+                hospedagem, comida e transporte local)
+              </span>
+              <span className="country-guide-cost-note">
+                Estimativa aproximada, não inclui passagem aérea internacional — varia bastante conforme o estilo de
+                viagem.
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

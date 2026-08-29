@@ -9,6 +9,8 @@ import { MAP_STROKE, statusFill } from '../lib/colors'
 import { aggregateVisits } from '../lib/aggregateVisits'
 import { MapAvatar } from './MapAvatar'
 import { CountryInfoTrigger } from './CountryInfoTrigger'
+import { CountryInfoModal } from './CountryInfoModal'
+import { InfoBadgeMarker } from './InfoBadgeMarker'
 import { MemoriesTrigger } from './MemoriesTrigger'
 import { MemoriesModal } from './MemoriesModal'
 import julianaAvatar from '../assets/avatars/juliana.jpeg'
@@ -49,6 +51,7 @@ export function StateMap({
   const [error, setError] = useState(false)
   const [hoveredName, setHoveredName] = useState<string | null>(null)
   const [memoriesForId, setMemoriesForId] = useState<string | null>(null)
+  const [infoFor, setInfoFor] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     setData(null)
@@ -118,8 +121,10 @@ export function StateMap({
         <Geographies geography={data}>
           {({ geographies }) => {
             const centroidById = new Map<string, [number, number]>()
+            const nameById = new Map<string, string>()
             for (const geo of geographies) {
               centroidById.set(geo.properties.id, geoCentroid(geo as never) as [number, number])
+              nameById.set(geo.properties.id, geo.properties.name)
             }
             return (
               <>
@@ -154,6 +159,7 @@ export function StateMap({
                   if (!coords) return null
                   const src = status.juliana && status.isa ? togetherAvatar : PERSON_AVATAR[status.juliana ? 'juliana' : 'isa']
                   const mine = Boolean(visits[`state:${id}`]?.[person])
+                  const name = nameById.get(id) ?? visits[`state:${id}`]?.name ?? id
                   return (
                     <MapAvatar
                       key={id}
@@ -161,10 +167,27 @@ export function StateMap({
                       coordinates={coords}
                       src={src}
                       size={AVATAR_SIZE}
-                      badge={mine ? { emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(id) } : undefined}
+                      badges={[
+                        { emoji: '💡', title: `Curiosidades sobre ${name}`, onClick: () => setInfoFor({ id, name }) },
+                        ...(mine ? [{ emoji: '📷', title: 'Lembranças', onClick: () => setMemoriesForId(id) }] : []),
+                      ]}
                     />
                   )
                 })}
+                {geographies
+                  .filter((geo) => !stateStatus.has(geo.properties.id))
+                  .map((geo) => {
+                    const coords = centroidById.get(geo.properties.id)
+                    if (!coords) return null
+                    return (
+                      <InfoBadgeMarker
+                        key={`info-${geo.properties.id}`}
+                        coordinates={coords}
+                        title={`Curiosidades sobre ${geo.properties.name}`}
+                        onClick={() => setInfoFor({ id: geo.properties.id, name: geo.properties.name })}
+                      />
+                    )
+                  })}
               </>
             )
           }}
@@ -178,6 +201,15 @@ export function StateMap({
           onAddPhoto={(dataUrl) => onAddPhoto('state', memoriesForId, dataUrl)}
           onRemovePhoto={(dataUrl) => onRemovePhoto('state', memoriesForId, dataUrl)}
           onClose={() => setMemoriesForId(null)}
+        />
+      )}
+      {infoFor && (
+        <CountryInfoModal
+          countryId={infoFor.id}
+          countryName={infoFor.name}
+          level="state"
+          hint={countryName}
+          onClose={() => setInfoFor(null)}
         />
       )}
     </div>
